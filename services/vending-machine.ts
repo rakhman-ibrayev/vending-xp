@@ -1,10 +1,48 @@
-import UsbSerialService from "./usb-serial-service";
+import SerialService from "./serial-service";
+
+export interface InitializationSettings {
+  devicePath?: string;
+  baudRate?: number;
+  dataBits?: number;
+  stopBits?: number;
+  parity?: 0 | 1 | 2;
+}
 
 class VendingMachineAPI {
-  static readonly VENDOR_ID = 0x1234; // Replace with your device's actual vendor ID
+  static async init({
+    devicePath = "/dev/ttyS4",
+    baudRate = 9600,
+    dataBits = 8,
+    stopBits = 1,
+    parity = 0,
+  }: InitializationSettings): Promise<boolean> {
+    return await SerialService.connect({
+      devicePath,
+      baudRate,
+      dataBits,
+      stopBits,
+      parity,
+    });
+  }
 
-  static async init(): Promise<boolean> {
-    return await UsbSerialService.connect(this.VENDOR_ID);
+  static close() {
+    SerialService.disconnect();
+  }
+
+  static async getTemperature(): Promise<number> {
+    const command = 0x07; // Temperature command
+    const data: number[] = Array(20).fill(0); // Fill with zeros for padding
+
+    await SerialService.sendCommand(command, data);
+
+    return new Promise((resolve) => {
+      SerialService.onData((response) => {
+        if (response.length < 4) return;
+
+        const temp = ((response[2] << 8) | response[3]) / 10;
+        resolve(temp);
+      });
+    });
   }
 
   static async vendProduct(slot: number): Promise<void> {
@@ -20,11 +58,11 @@ class VendingMachineAPI {
       ...Array(9).fill(0), // Padding
     ];
 
-    await UsbSerialService.sendCommand(command, data);
+    await SerialService.sendCommand(command, data);
   }
 
   static listenForResponses(callback: (data: number[]) => void) {
-    UsbSerialService.onData((data) => {
+    SerialService.onData((data) => {
       if (data.length < 20) return;
 
       const command = data[1];
