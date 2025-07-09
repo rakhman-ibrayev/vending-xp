@@ -72,6 +72,10 @@ class SerialService {
     this.serialPort = null;
   }
 
+  devicePaths = SerialPortAPI.devicePaths;
+
+  deviceNames = SerialPortAPI.deviceNames;
+
   private buildFrame(command: number, data: number[]): number[] {
     const frame = new Array(20).fill(0);
     frame[0] = 0x01; // Slave address

@@ -1,91 +1,163 @@
 import VendingMachineAPI from "@/services/vending-machine";
 import { useEffect, useState } from "react";
-import { Button, Text, View } from "react-native";
-import SerialPortAPI from "react-native-serial-port-api";
+import {
+  ActivityIndicator,
+  Button,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+
+type Device = { name: string; path: string };
 
 const VendingController = () => {
-  const [status, setStatus] = useState("Disconnected");
-  const [lastResponse, setLastResponse] = useState("");
-  const [devices, setDevices] = useState<any>(null);
-  const [paths, setPaths] = useState<any>([]);
-  const [selectedPath, setSelectedPath] = useState<string>("");
+  const [status, setStatus] = useState<
+    "Disconnected" | "Connecting" | "Connected" | "Error"
+  >("Disconnected");
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  const [lastResponse, setLastResponse] = useState<string>("");
 
-  const connectToPath = async (path?: string) => {
-    setStatus("Connecting...");
+  // Load available devices on mount
+  useEffect(() => {
+    const loadDevices = async () => {
+      try {
+        const availableDevices = await VendingMachineAPI.getAvailableDevices();
+        setDevices(availableDevices);
+        if (availableDevices.length > 0) {
+          setSelectedDevice(availableDevices[0]);
+        }
+      } catch (error) {
+        setStatus("Error");
+        console.error("Device discovery failed:", error);
+      }
+    };
+
+    loadDevices();
+  }, []);
+
+  // Auto-connect to first device if available
+  useEffect(() => {
+    if (selectedDevice && status === "Disconnected") {
+      connectToDevice(selectedDevice);
+    }
+  }, [selectedDevice]);
+
+  const connectToDevice = async (device: Device) => {
+    setStatus("Connecting");
 
     try {
       const connected = await VendingMachineAPI.init({
-        devicePath: path || selectedPath,
+        devicePath: device.path,
       });
-      setStatus(
-        connected ? `Connected (${path || selectedPath})` : "Connection failed"
-      );
 
-      VendingMachineAPI.listenForResponses((data) => {
-        setLastResponse(`Received: ${data.join(" ")}`);
-      });
+      if (connected) {
+        setStatus("Connected");
+        // Set up response listener
+        VendingMachineAPI.listenForResponses((data) => {
+          setLastResponse(`Response: ${data.slice(0, 10).join(" ")}...`); // Truncate for display
+        });
+      } else {
+        setStatus("Error");
+      }
     } catch (error) {
-      setStatus(`Connection error: ${error}`);
+      setStatus("Error");
+      console.error("Connection error:", error);
     }
   };
 
-  useEffect(() => {
-    SerialPortAPI.deviceNames(setDevices);
-    SerialPortAPI.devicePaths((paths: string[]) => {
-      setPaths(paths);
-      if (paths && paths.length > 0) {
-        setSelectedPath(paths[0]);
-      }
-    });
-  }, []);
+  const handleVend = async (slot: number) => {
+    try {
+      await VendingMachineAPI.vendProduct(slot);
+      setLastResponse(`Vending slot ${slot} started`);
+    } catch (error) {
+      setLastResponse(`Vend failed: ${error}`);
+    }
+  };
 
   return (
-    <View style={{ padding: 20 }}>
-      <Text>Status: {status}</Text>
-      <Text>{lastResponse}</Text>
-      <Text>Devices: {JSON.stringify(devices)}</Text>
-      <Text>Paths: {JSON.stringify(paths)}</Text>
+    <View style={styles.container}>
+      <Text style={styles.status}>Status: {status}</Text>
 
-      <Text>Select device path:</Text>
+      {status === "Connecting" && <ActivityIndicator size="small" />}
 
-      {paths && paths.length > 0 && (
-        <View style={{ marginBottom: 8 }}>
-          <Text>Available paths:</Text>
+      <Text style={styles.response}>{lastResponse || "No responses yet"}</Text>
 
-          {paths.map((path: string) => (
+      {devices.length > 0 && (
+        <View style={styles.deviceList}>
+          <Text>Available devices:</Text>
+
+          {devices.map((device) => (
             <Text
-              key={path}
-              style={{
-                color: selectedPath === path ? "blue" : "black",
-                textDecorationLine: "underline",
-              }}
-              onPress={() => setSelectedPath(path)}
+              key={device.path}
+              style={[
+                styles.deviceItem,
+                selectedDevice?.path === device.path && styles.selectedDevice,
+              ]}
+              onPress={() => setSelectedDevice(device)}
             >
-              {path}
+              {device.name} ({device.path})
             </Text>
           ))}
         </View>
       )}
 
-      <Button
-        title="Reconnect"
-        onPress={() => connectToPath(selectedPath)}
-        disabled={!selectedPath}
-      />
-
-      <Button
-        title="Vend Slot 1"
-        onPress={async () => {
-          try {
-            await VendingMachineAPI.vendProduct(1);
-            setStatus("Vending started");
-          } catch (error) {
-            setStatus(`Error: ${error}`);
-          }
-        }}
-      />
+      <View style={styles.buttonGroup}>
+        <Button
+          title="Reconnect"
+          onPress={() => selectedDevice && connectToDevice(selectedDevice)}
+          disabled={!selectedDevice || status === "Connecting"}
+        />
+        <Button
+          title="Vend Slot 1"
+          onPress={() => handleVend(1)}
+          disabled={status !== "Connected"}
+        />
+        <Button
+          title="Toggle Light"
+          onPress={async () => {
+            try {
+              await VendingMachineAPI.setLight(0, status !== "Connected");
+              setLastResponse(`Light ${status === "Connected" ? "OFF" : "ON"}`);
+            } catch (error) {
+              setLastResponse(`Light control failed: ${error}`);
+            }
+          }}
+          disabled={!selectedDevice}
+        />
+      </View>
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    padding: 20,
+    flex: 1,
+  },
+  status: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  response: {
+    fontFamily: "monospace",
+    marginVertical: 10,
+  },
+  deviceList: {
+    marginVertical: 10,
+  },
+  deviceItem: {
+    padding: 5,
+  },
+  selectedDevice: {
+    backgroundColor: "#ddd",
+    fontWeight: "bold",
+  },
+  buttonGroup: {
+    gap: 10,
+    marginTop: 20,
+  },
+});
 
 export default VendingController;
