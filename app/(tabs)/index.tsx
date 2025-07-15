@@ -10,6 +10,9 @@ import {
 
 type Device = { name: string; path: string };
 
+/* 
+ Попробовать в тупую отправить пример команды из доки в пункте 6
+*/
 const VendingController = () => {
   const [status, setStatus] = useState<
     "Disconnected" | "Connecting" | "Connected" | "Error"
@@ -24,6 +27,7 @@ const VendingController = () => {
       try {
         const availableDevices = await VendingMachineAPI.getAvailableDevices();
         setDevices(availableDevices);
+
         if (availableDevices.length > 0) {
           setSelectedDevice(availableDevices[0]);
         }
@@ -55,7 +59,7 @@ const VendingController = () => {
         setStatus("Connected");
         // Set up response listener
         VendingMachineAPI.listenForResponses((data) => {
-          setLastResponse(`Response: ${data.slice(0, 10).join(" ")}...`); // Truncate for display
+          setLastResponse(`Response: ${data}...`); // Truncate for display
         });
       } else {
         setStatus("Error");

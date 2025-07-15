@@ -62,6 +62,7 @@ class SerialService {
     if (!this.serialPort) throw new Error("Device not connected");
 
     this.subscription = this.serialPort.onReceived((buff) => {
+      console.log("onData: ", buff, Array.from(buff));
       callback(this.hexToBytes(buff.toString("hex")));
     });
   }

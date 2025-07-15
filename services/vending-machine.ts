@@ -33,6 +33,10 @@ class VendingMachineAPI {
       this.isInitialized = true;
       // Turn on default light on connect
       await this.setLight(0, true);
+      setTimeout(() => {}, 1000);
+      await this.setLight(1, true);
+      setTimeout(() => {}, 1000);
+      await this.setLight(2, true);
     }
 
     return connected;
@@ -133,6 +137,7 @@ class VendingMachineAPI {
           console.log("Light state updated");
           break;
       }
+
       callback(response);
     });
   }
