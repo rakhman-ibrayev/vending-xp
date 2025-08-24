@@ -1,5 +1,6 @@
 import { EventSubscription } from "react-native";
 import SerialPortAPI, { type SerialPort } from "react-native-serial-port-api";
+import crc16modbus from "./crc16modbus";
 
 export interface ConnectionSettings {
   devicePath: string;
@@ -83,8 +84,7 @@ class SerialService {
     frame[1] = command;
     data.forEach((byte, i) => (frame[i + 2] = byte));
 
-    // CRC16-MODBUS
-    const crc = this.calculateCRC(frame.slice(0, 18));
+    const crc = crc16modbus(new Uint8Array(frame.slice(0, 18)));
     frame[18] = crc & 0xff;
     frame[19] = (crc >> 8) & 0xff;
 
@@ -97,21 +97,12 @@ class SerialService {
 
   private hexToBytes(hex: string): number[] {
     const bytes = [];
+
     for (let i = 0; i < hex.length; i += 2) {
       bytes.push(parseInt(hex.substr(i, 2), 16));
     }
-    return bytes;
-  }
 
-  private calculateCRC(data: number[]): number {
-    let crc = 0xffff;
-    for (const byte of data) {
-      crc ^= byte << 8;
-      for (let i = 0; i < 8; i++) {
-        crc = crc & 0x8000 ? (crc << 1) ^ 0x8005 : crc << 1;
-      }
-    }
-    return crc & 0xffff;
+    return bytes;
   }
 }
 

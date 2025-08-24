@@ -1,5 +1,8 @@
+import { ItemSelectionHint } from "@/components/item-selection-hint";
+import { StatusBar } from "@/components/status-bar";
+import { ItemSelection } from "@/modules/item-selection";
 import { useEffect, useState } from "react";
-import { Button, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import SerialPortAPI, { SerialPort } from "react-native-serial-port-api";
 
 const Section6Commands = {
@@ -114,71 +117,11 @@ const VendingController = () => {
 
   return (
     <View style={styles.container}>
-      <Text>{JSON.stringify(responses)}</Text>
+      <StatusBar />
 
-      <Text>{JSON.stringify(serialPort)}</Text>
+      <ItemSelectionHint />
 
-      <Text>Temperature: {JSON.stringify(temperature)}</Text>
-
-      <Button
-        onPress={() => {
-          if (serialPort) {
-            //               010504020000460200000000000000000000b847
-            // unencripted: 0103000000000000000000000000000000000000D0E8
-            // encrypted:   01030000000000000000000000000000000000000EAD1
-            serialPort.send(Section6Commands.turnOnO1);
-          }
-        }}
-        title="Включить свет"
-      />
-
-      <Button
-        onPress={() => {
-          if (serialPort) {
-            //               010504020000460200000000000000000000b847
-            // unencripted: 0103000000000000000000000000000000000000D0E8
-            // encrypted:   01030000000000000000000000000000000000000EAD1
-            serialPort.send(Section6Commands.turnOffO1);
-          }
-        }}
-        title="Отключить свет"
-      />
-
-      <Button
-        onPress={() => {
-          if (serialPort) {
-            //               010504020000460200000000000000000000b847
-            // unencripted: 0103000000000000000000000000000000000000D0E8
-            // encrypted:   01030000000000000000000000000000000000000EAD1
-            serialPort.send(Section6Commands.startMotorWithLight);
-          }
-        }}
-        title="Запустить мотор 048"
-      />
-
-      <Button
-        onPress={() => {
-          if (serialPort) {
-            //               010504020000460200000000000000000000b847
-            // unencripted: 0103000000000000000000000000000000000000D0E8
-            // encrypted:   01030000000000000000000000000000000000000EAD1
-            serialPort.send(Section6Commands.turnOnCompressor);
-          }
-        }}
-        title="Включить компрессор"
-      />
-
-      <Button
-        onPress={() => {
-          if (serialPort) {
-            //               010504020000460200000000000000000000b847
-            // unencripted: 0103000000000000000000000000000000000000D0E8
-            // encrypted:   01030000000000000000000000000000000000000EAD1
-            serialPort.send(Section6Commands.turnOffCompressor);
-          }
-        }}
-        title="Выключить компрессор"
-      />
+      <ItemSelection />
     </View>
   );
 };
@@ -187,30 +130,8 @@ const styles = StyleSheet.create({
   container: {
     padding: 20,
     flex: 1,
-    gap: 16,
-  },
-  status: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 10,
-  },
-  response: {
-    fontFamily: "monospace",
-    marginVertical: 10,
-  },
-  deviceList: {
-    marginVertical: 10,
-  },
-  deviceItem: {
-    padding: 5,
-  },
-  selectedDevice: {
-    backgroundColor: "#ddd",
-    fontWeight: "bold",
-  },
-  buttonGroup: {
-    gap: 10,
-    marginTop: 20,
+    gap: 24,
+    backgroundColor: "#ffffff",
   },
 });
 
