@@ -1,5 +1,6 @@
 "use client";
 
+import { useNetworkState } from "expo-network";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
@@ -33,6 +34,7 @@ const StatusBar = ({
   borderColor = "#e5e7eb",
   borderRadius = 8,
 }: StatusBarProps) => {
+  const { isConnected } = useNetworkState();
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -56,9 +58,13 @@ const StatusBar = ({
     >
       {showWifi && (
         <View style={styles.wifiContainer}>
-          <IconSymbol name="wifi" size={18} weight="medium" color="#000" />
+          {isConnected && (
+            <IconSymbol name="wifi" size={18} weight="medium" color="#000" />
+          )}
 
-          <Text style={[styles.wifiText, { color: textColor }]}>WiFi</Text>
+          <Text style={[styles.wifiText, { color: textColor }]}>
+            {isConnected ? "Подключено" : "Нет соединения"}
+          </Text>
         </View>
       )}
 
