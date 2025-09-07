@@ -1,4 +1,5 @@
 import { ItemSelectionHint } from "@/components/item-selection-hint";
+import { MachineRegistration } from "@/components/machine-registration";
 import { NoInternet } from "@/components/no-internet";
 import { StatusBar } from "@/components/status-bar";
 import { ItemSelection } from "@/modules/item-selection";
@@ -14,13 +15,13 @@ const VendingController = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar />
+      <MachineRegistration>
         <StatusBar />
 
         <ItemSelectionHint />
 
         <ItemSelection />
-      <ItemSelection />
+      </MachineRegistration>
     </View>
   );
 };
