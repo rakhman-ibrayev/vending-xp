@@ -1,10 +1,18 @@
+import { ExitModal } from "@/components/exit-modal";
+import { Button } from "@/components/ui/button";
+import { useNetworkState } from "expo-network";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { ExitModal } from "./exit-modal";
-import { Button } from "./ui/button";
 
-const NoInternet = () => {
+interface NoInternetProps {
+  children?: React.ReactNode;
+}
+
+const NoInternet = ({ children }: NoInternetProps) => {
+  const { isConnected } = useNetworkState();
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
+
+  if (isConnected) return children;
 
   return (
     <View style={[styles.container, styles.noInternet]}>
@@ -33,4 +41,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export { NoInternet };
+export { NoInternet, type NoInternetProps };

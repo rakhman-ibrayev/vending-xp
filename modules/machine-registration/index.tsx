@@ -1,31 +1,18 @@
+import { Button } from "@/components/ui/button";
 import { useMachine } from "@/entities/machines/use-machine";
+import { useSerialNumber } from "@/entities/machines/use-serial-number";
 import { useGetLocation } from "@/lib/hooks/use-get-location";
-import VendingMachineAPI from "@/services/vending-machine";
-import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import QRCode from "react-native-qrcode-svg";
-import { Button } from "./ui/button";
 
 interface MachineRegistrationProps {
   children?: React.ReactNode;
 }
 
 const MachineRegistration = ({ children }: MachineRegistrationProps) => {
-  const [serialNumber, setSerialNumber] = useState<string | null>(null);
   const { location } = useGetLocation();
-
+  const serialNumber = useSerialNumber();
   const machineQuery = useMachine(serialNumber);
-
-  useEffect(() => {
-    (async () => {
-      const isConnected = await VendingMachineAPI.init();
-
-      if (isConnected) {
-        const serialNumber = await VendingMachineAPI.getSerialNumber();
-        setSerialNumber(serialNumber);
-      }
-    })();
-  }, []);
 
   if (machineQuery.isLoading || machineQuery.isFetching) {
     return (

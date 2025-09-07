@@ -1,3 +1,4 @@
+import { NoInternet } from "@/modules/no-internet";
 import {
   onlineManager,
   QueryClient,
@@ -45,6 +46,7 @@ export default function RootLayout() {
 
         <StatusBar style="auto" />
       </SafeAreaView>
+      <NoInternet></NoInternet>
     </QueryClientProvider>
   );
 }

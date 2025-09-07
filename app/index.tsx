@@ -1,18 +1,10 @@
 import { ItemSelectionHint } from "@/components/item-selection-hint";
-import { MachineRegistration } from "@/components/machine-registration";
-import { NoInternet } from "@/components/no-internet";
 import { StatusBar } from "@/components/status-bar";
 import { ItemSelection } from "@/modules/item-selection";
-import { useNetworkState } from "expo-network";
+import { MachineRegistration } from "@/modules/machine-registration";
 import { StyleSheet, View } from "react-native";
 
 const VendingController = () => {
-  const { isConnected } = useNetworkState();
-
-  if (!isConnected) {
-    return <NoInternet />;
-  }
-
   return (
     <View style={styles.container}>
       <MachineRegistration>
