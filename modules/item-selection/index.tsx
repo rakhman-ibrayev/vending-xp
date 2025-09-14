@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useAddMachineOrder } from "@/entities/machines/use-add-machine-order";
 import { useMachineProducts } from "@/entities/machines/use-machine-products";
 import { useSerialNumber } from "@/entities/machines/use-serial-number";
+import { alert } from "@/lib/alert";
 import { router } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
@@ -32,22 +33,32 @@ const ItemSelection = () => {
     setNumpadValue("");
   };
 
-  const handlePayClick = async () => {
+  const handlePayClick = () => {
     if (!serialNumber || !isSelectedProduct) return;
 
-    const { data } = await orderMutation.mutateAsync({
-      serialNumber,
-      data: {
-        slot_index: selectedProduct.slot_index,
+    alert({
+      title: "Подтвердите свой возраст",
+      message: "Вам есть 16 лет?",
+      type: "warning",
+      positiveText: "Да",
+      negativeText: "Нет",
+      overlayClose: true,
+      onPositivePress: async () => {
+        const { data } = await orderMutation.mutateAsync({
+          serialNumber,
+          data: {
+            slot_index: selectedProduct.slot_index,
+          },
+        });
+
+        if (data?.id) {
+          router.navigate({
+            pathname: "/orders/[orderId]",
+            params: { orderId: data.id },
+          });
+        }
       },
     });
-
-    if (data?.id) {
-      router.navigate({
-        pathname: "/orders/[orderId]",
-        params: { orderId: data.id },
-      });
-    }
   };
 
   return (
