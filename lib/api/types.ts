@@ -1,5 +1,3 @@
-// types/api.ts
-
 // Machine types
 export interface Machine {
   id: number;
@@ -29,9 +27,18 @@ export interface MachineProduct {
   current_stock: number;
   max_capacity: number;
   last_restocked: string | null;
-  product_id: number | null;
-  machine_id: number | null;
   created_at: string;
+  products: {
+    category: string;
+    id: number;
+    image: string;
+    name: string;
+    price: number;
+    sku: string;
+  };
+  vending_machines: {
+    serial_number: string;
+  };
 }
 
 export interface Product {
@@ -53,23 +60,19 @@ export interface MachineWithProducts extends Machine {
 // Order types
 export interface Order {
   id: number;
-  status: "created" | "paid" | "failed";
-  created_at: string;
-  machine_id: number | null;
-  machine_product_id: number | null;
-  kaspi_txn_id: string | null;
-  kaspi_txn_date: string | null;
-  payment_amount: number | null;
 }
 
-export interface OrderWithDetails extends Order {
-  machine_products?: {
-    slot_index: number;
-    products: {
-      name: string | null;
-      price: number;
-    } | null;
-  } | null;
+export interface OrderWithStatus extends Order {
+  status: "created" | "paid" | "failed" | "cancelled";
+}
+
+export interface OrderWithDetails extends OrderWithStatus {
+  created_at: string;
+  id: number;
+  product_name: string;
+  product_price: number;
+  slot_index: number;
+  machine_command: string;
 }
 
 // API Response types
@@ -82,29 +85,19 @@ export interface OrderCreateRequest {
   slot_index: number;
 }
 
-export interface OrderUpdateRequest {
-  status?: "created" | "paid" | "failed";
-  payment_amount?: number;
-  kaspi_txn_id?: string;
-  kaspi_txn_date?: string;
-}
-
 // API function types
 export interface MachineApi {
   getMachine: (serialNumber: string) => Promise<ApiResponse<Machine>>;
   createOrder: (
-    machineId: number,
+    serialNumber: string,
     data: OrderCreateRequest
   ) => Promise<ApiResponse<Order>>;
   getMachineProducts: (
-    machineId: number
+    serialNumber: string
   ) => Promise<ApiResponse<MachineProduct[]>>;
 }
 
 export interface OrdersApi {
   getOrder: (orderId: number) => Promise<ApiResponse<OrderWithDetails>>;
-  updateOrder: (
-    orderId: number,
-    data: OrderUpdateRequest
-  ) => Promise<ApiResponse<Order>>;
+  cancelOrder: (orderId: number) => Promise<ApiResponse<OrderWithStatus>>;
 }

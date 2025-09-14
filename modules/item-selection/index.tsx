@@ -2,20 +2,52 @@ import { Numpad } from "@/components/numpad";
 import { ProductCard } from "@/components/product-card";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { Button } from "@/components/ui/button";
-import { ITEMS } from "@/constants/items";
+import { useAddMachineOrder } from "@/entities/machines/use-add-machine-order";
+import { useMachineProducts } from "@/entities/machines/use-machine-products";
+import { useSerialNumber } from "@/entities/machines/use-serial-number";
+import { router } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 const ItemSelection = () => {
   const [numpadValue, setNumpadValue] = useState("");
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
-  const selectedProduct = ITEMS[Number(numpadValue) as keyof typeof ITEMS];
+
+  const serialNumber = useSerialNumber();
+  const orderMutation = useAddMachineOrder();
+  const productsQuery = useMachineProducts(serialNumber);
+
+  const products = productsQuery.data?.data || [];
+
+  const selectedProduct = numpadValue
+    ? products.find((product) => product.slot_index.toString() === numpadValue)
+    : undefined;
+
+  const isSelectedProduct = typeof selectedProduct !== "undefined";
 
   const openModal = () => setIsItemModalOpen(true);
 
   const closeModal = () => {
     setIsItemModalOpen(false);
     setNumpadValue("");
+  };
+
+  const handlePayClick = async () => {
+    if (!serialNumber || !isSelectedProduct) return;
+
+    const { data } = await orderMutation.mutateAsync({
+      serialNumber,
+      data: {
+        slot_index: selectedProduct.slot_index,
+      },
+    });
+
+    if (data?.id) {
+      router.navigate({
+        pathname: "/orders/[orderId]",
+        params: { orderId: data.id },
+      });
+    }
   };
 
   return (
@@ -29,7 +61,7 @@ const ItemSelection = () => {
         }
       />
 
-      <Button disabled={!numpadValue} onPress={openModal}>
+      <Button disabled={!numpadValue || !isSelectedProduct} onPress={openModal}>
         Оплатить
       </Button>
 
@@ -39,9 +71,9 @@ const ItemSelection = () => {
         title="Вы выбрали товар"
       >
         <ProductCard
-          name={selectedProduct?.name || "Неизвестный товар"}
-          price={selectedProduct?.price || ""}
-          imageUrl={selectedProduct?.imageUrl || ""}
+          name={selectedProduct?.products.name || "Неизвестный товар"}
+          price={selectedProduct?.products.price.toString() || ""}
+          imageUrl={selectedProduct?.products.image || ""}
           description={`Ячейка №${numpadValue}`}
         />
 
@@ -54,7 +86,11 @@ const ItemSelection = () => {
             Отмена
           </Button>
 
-          <Button onPress={closeModal} style={styles.modalControl}>
+          <Button
+            onPress={handlePayClick}
+            style={styles.modalControl}
+            isLoading={orderMutation.isPending}
+          >
             Оплатить
           </Button>
         </View>

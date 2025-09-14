@@ -1,43 +1,25 @@
 import api from "./api";
-import {
-  ApiResponse,
-  Machine,
-  MachineProduct,
-  Order,
-  OrderCreateRequest,
-  OrderUpdateRequest,
-  OrderWithDetails,
-} from "./types";
+import { MachineApi, OrdersApi } from "./types";
 
 // Machine API
-export const machineApi = {
+export const machineApi: MachineApi = {
   // Get machine by serial number
-  getMachine: (serialNumber: string): Promise<ApiResponse<Machine>> =>
-    api.get(`/machines/${serialNumber}`),
+  getMachine: (serialNumber) => api.get(`/machines/${serialNumber}`),
 
   // Create new order for machine
-  createOrder: (
-    serialNumber: string,
-    data: OrderCreateRequest
-  ): Promise<ApiResponse<Order>> =>
+  createOrder: (serialNumber, data) =>
     api.post(`/machines/${serialNumber}/orders`, data),
 
   // Get machine products
-  getMachineProducts: (
-    serialNumber: string
-  ): Promise<ApiResponse<MachineProduct[]>> =>
+  getMachineProducts: (serialNumber) =>
     api.get(`/machines/${serialNumber}/products`),
 };
 
 // Orders API
-export const ordersApi = {
+export const ordersApi: OrdersApi = {
   // Get order by ID
-  getOrder: (orderId: number): Promise<ApiResponse<OrderWithDetails>> =>
-    api.get(`/orders/${orderId}`),
+  getOrder: (orderId) => api.get(`/orders/${orderId}`),
 
   // Update order
-  updateOrder: (
-    orderId: number,
-    data: OrderUpdateRequest
-  ): Promise<ApiResponse<Order>> => api.patch(`/orders/${orderId}`, data),
+  cancelOrder: (orderId) => api.patch(`/orders/${orderId}/cancel`),
 };
