@@ -1,4 +1,10 @@
-import { StyleSheet, Text, TouchableOpacity, ViewStyle } from "react-native";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  ViewStyle,
+} from "react-native";
 
 interface ButtonProps {
   children: React.ReactNode;
@@ -6,6 +12,7 @@ interface ButtonProps {
   disabled?: boolean;
   style?: ViewStyle;
   variant?: "primary" | "secondary";
+  isLoading?: boolean;
 }
 
 const Button = ({
@@ -14,6 +21,7 @@ const Button = ({
   disabled,
   style,
   variant = "primary",
+  isLoading = false,
 }: ButtonProps) => {
   const isSecondary = variant === "secondary";
 
@@ -31,13 +39,20 @@ const Button = ({
         },
         style,
       ]}
-      disabled={disabled}
+      disabled={disabled || isLoading}
       onPress={onPress}
       activeOpacity={0.75}
     >
-      <Text style={[styles.text, isSecondary && styles.secondaryText]}>
-        {children}
-      </Text>
+      {isLoading ? (
+        <ActivityIndicator
+          size="small"
+          color={isSecondary ? "#e53935" : "#fff"}
+        />
+      ) : (
+        <Text style={[styles.text, isSecondary && styles.secondaryText]}>
+          {children}
+        </Text>
+      )}
     </TouchableOpacity>
   );
 };
