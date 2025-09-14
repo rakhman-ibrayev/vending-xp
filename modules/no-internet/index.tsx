@@ -1,8 +1,9 @@
 import { ExitModal } from "@/components/exit-modal";
+import { PageContainer } from "@/components/page-container";
 import { Button } from "@/components/ui/button";
 import { useNetworkState } from "expo-network";
 import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text } from "react-native";
 
 interface NoInternetProps {
   children?: React.ReactNode;
@@ -15,7 +16,7 @@ const NoInternet = ({ children }: NoInternetProps) => {
   if (isConnected) return children;
 
   return (
-    <View style={[styles.container, styles.noInternet]}>
+    <PageContainer style={styles.container}>
       <Text style={{ fontSize: 20 }}>Соединение отсутствует</Text>
 
       <ExitModal
@@ -24,18 +25,12 @@ const NoInternet = ({ children }: NoInternetProps) => {
       />
 
       <Button onPress={() => setIsExitModalOpen(true)}>Настройки</Button>
-    </View>
+    </PageContainer>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
-    flex: 1,
-    gap: 24,
-    backgroundColor: "#ffffff",
-  },
-  noInternet: {
     justifyContent: "center",
     alignItems: "center",
   },

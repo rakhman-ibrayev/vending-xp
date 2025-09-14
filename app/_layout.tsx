@@ -1,3 +1,4 @@
+import { StatusBar } from "@/components/status-bar";
 import { NoInternet } from "@/modules/no-internet";
 import {
   onlineManager,
@@ -7,8 +8,8 @@ import {
 import { useFonts } from "expo-font";
 import * as Network from "expo-network";
 import { Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { SafeAreaView, StyleSheet } from "react-native";
+import { StatusBar as ExpoStatusBar } from "expo-status-bar";
+import { SafeAreaView, StyleSheet, View } from "react-native";
 import "react-native-reanimated";
 
 onlineManager.setEventListener((setOnline) => {
@@ -39,14 +40,25 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <SafeAreaView style={styles.container}>
-        <Stack>
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="+not-found" />
-        </Stack>
+        <NoInternet>
+          <View style={{ padding: 20 }}>
+            <StatusBar />
+          </View>
 
-        <StatusBar style="auto" />
+          <Stack>
+            <Stack.Screen name="index" options={{ headerShown: false }} />
+
+            <Stack.Screen
+              name="orders/[orderId]"
+              options={{ headerShown: false, gestureEnabled: false }}
+            />
+
+            <Stack.Screen name="+not-found" />
+          </Stack>
+
+          <ExpoStatusBar style="auto" />
+        </NoInternet>
       </SafeAreaView>
-      <NoInternet></NoInternet>
     </QueryClientProvider>
   );
 }

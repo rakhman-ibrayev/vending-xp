@@ -1,30 +1,18 @@
 import { ItemSelectionHint } from "@/components/item-selection-hint";
-import { StatusBar } from "@/components/status-bar";
+import { PageContainer } from "@/components/page-container";
 import { ItemSelection } from "@/modules/item-selection";
 import { MachineRegistration } from "@/modules/machine-registration";
-import { StyleSheet, View } from "react-native";
 
 const VendingController = () => {
   return (
-    <View style={styles.container}>
+    <PageContainer>
       <MachineRegistration>
-        <StatusBar />
-
         <ItemSelectionHint />
 
         <ItemSelection />
       </MachineRegistration>
-    </View>
+    </PageContainer>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    flex: 1,
-    gap: 24,
-    backgroundColor: "#ffffff",
-  },
-});
 
 export default VendingController;
