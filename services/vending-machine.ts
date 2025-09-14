@@ -92,6 +92,49 @@ class VendingMachineAPI {
     });
   }
 
+  static async vendProduct(
+    slot: number,
+    options: {
+      motorType?: number;
+      lightScreenMode?: number;
+      delay?: number;
+      timeout?: number;
+    } = {}
+  ) {
+    const command = 0x05; // Motor Run
+    const data = [
+      slot, // Y1: Motor index
+      options.motorType ?? 0x02, // Y2: Default to 2-wire motor
+      options.lightScreenMode ?? 0x02, // Y3: Default to light screen mode 2
+      options.delay ?? 15, // Y4: Default 1.5s delay
+      0, // Y5: Continue flag
+      options.timeout ?? 70, // Y6: Default 7s timeout
+      2, // Y7: 0.2s lock time
+      ...Array(9).fill(0), // Padding
+    ];
+
+    await SerialService.sendCommand(command, data);
+
+    return new Promise((resolve) => {
+      SerialService.onData((response) => {
+        if (response[1] !== command) return;
+
+        // Parse the response according to protocol section 5.3
+        const status = response[3]; // Z3: Implementation results
+
+        if (status === 0x00) {
+          resolve({ success: true, status });
+        } else {
+          resolve({
+            success: false,
+            status,
+            error: this.parseError(status),
+          });
+        }
+      });
+    });
+  }
+
   static async setCompressor(on: boolean): Promise<void> {
     const command = 0x08; // Write DO command
     const data = [
