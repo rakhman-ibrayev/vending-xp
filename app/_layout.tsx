@@ -1,4 +1,5 @@
 import { StatusBar } from "@/components/status-bar";
+import { AlertProvider } from "@/lib/alert";
 import { NoInternet } from "@/modules/no-internet";
 import {
   onlineManager,
@@ -40,24 +41,26 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <SafeAreaView style={styles.container}>
-        <NoInternet>
-          <View style={{ padding: 20 }}>
-            <StatusBar />
-          </View>
+        <AlertProvider>
+          <NoInternet>
+            <View style={{ padding: 20 }}>
+              <StatusBar />
+            </View>
 
-          <Stack>
-            <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack>
+              <Stack.Screen name="index" options={{ headerShown: false }} />
 
-            <Stack.Screen
-              name="orders/[orderId]"
-              options={{ headerShown: false, gestureEnabled: false }}
-            />
+              <Stack.Screen
+                name="orders/[orderId]"
+                options={{ headerShown: false, gestureEnabled: false }}
+              />
 
-            <Stack.Screen name="+not-found" />
-          </Stack>
+              <Stack.Screen name="+not-found" />
+            </Stack>
 
-          <ExpoStatusBar style="auto" />
-        </NoInternet>
+            <ExpoStatusBar style="auto" />
+          </NoInternet>
+        </AlertProvider>
       </SafeAreaView>
     </QueryClientProvider>
   );
