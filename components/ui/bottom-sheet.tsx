@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { IconSymbol } from "./IconSymbol";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 interface BottomSheetProps {
   visible: boolean;
@@ -51,7 +51,7 @@ const BottomSheet = ({
                 <Text style={styles.title}>{title}</Text>
                 <TouchableOpacity onPress={onClose} style={styles.closeButton}>
                   <Text style={styles.closeText}>
-                    <IconSymbol name="xmark" color="#000" />
+                    <MaterialIcons name="close" color="#000" />
                   </Text>
                 </TouchableOpacity>
               </View>

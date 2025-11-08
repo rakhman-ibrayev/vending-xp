@@ -4,7 +4,7 @@ import { useNetworkState } from "expo-network";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { IconSymbol } from "./ui/IconSymbol";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 const formatDateTime = (date: Date, dateFormat: string) => {
   return date.toLocaleString(dateFormat, {
@@ -59,7 +59,7 @@ const StatusBar = ({
       {showWifi && (
         <View style={styles.wifiContainer}>
           {isConnected && (
-            <IconSymbol name="wifi" size={18} weight="medium" color="#000" />
+            <MaterialIcons name="wifi" size={18} weight="medium" color="#000" />
           )}
 
           <Text style={[styles.wifiText, { color: textColor }]}>

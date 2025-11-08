@@ -7,7 +7,7 @@ import {
   type TextStyle,
   type ViewStyle,
 } from "react-native";
-import { IconSymbol } from "./ui/IconSymbol";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 interface NumpadButtonProps {
   text: React.ReactNode;
@@ -98,9 +98,7 @@ const Numpad = ({
         {renderButton(0)}
 
         <NumpadButton
-          text={
-            <IconSymbol name="arrow.left.square" color="#8f8f8f" size={20} />
-          }
+          text={<MaterialIcons name="backspace" color="#8f8f8f" size={20} />}
           buttonStyle={styles.backSpace}
           onPress={onBackspacePress}
         />

@@ -1,9 +1,9 @@
 import { PageContainer } from "@/components/page-container";
 import { Button } from "@/components/ui/button";
-import { IconSymbol } from "@/components/ui/IconSymbol";
 import { useCancelOrder } from "@/entities/orders/use-cancel-order";
 import { useOrder } from "@/entities/orders/use-order";
 import VendingMachineAPI from "@/services/vending-machine";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Animated, StyleSheet, Text, View } from "react-native";
@@ -84,7 +84,11 @@ const Order = () => {
           <Animated.View
             style={[styles.confirmation, { opacity: confirmationOpacity }]}
           >
-            <IconSymbol name="checkmark.circle" color="#06db06ff" size={200} />
+            <MaterialIcons
+              name="check-circle-outline"
+              color="#06db06ff"
+              size={200}
+            />
 
             <Text style={styles.confirmationText}>Спасибо за покупку!</Text>
 
