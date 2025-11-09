@@ -18,7 +18,7 @@ const ItemSelection = () => {
   const orderMutation = useAddMachineOrder();
   const productsQuery = useMachineProducts(serialNumber);
 
-  const products = productsQuery.data?.data || [];
+  const products = productsQuery.data?.data.data || [];
 
   const selectedProduct = numpadValue
     ? products.find((product) => product.slot_index.toString() === numpadValue)
@@ -38,13 +38,10 @@ const ItemSelection = () => {
       overlayClose: true,
       onPositivePress: async () => {
         const { data } = await orderMutation.mutateAsync({
-          serialNumber,
-          data: {
-            slot_index: selectedProduct.slot_index,
-          },
+          slot_index: selectedProduct.slot_index,
         });
 
-        if (data?.id) {
+        if (data?.data?.id) {
           router.replace({
             pathname: "/orders/[orderId]",
             params: { orderId: data.data.id },
@@ -117,14 +114,14 @@ const ItemSelection = () => {
         onBackspacePress={handleBackspace}
       />
 
-          <Button
-            onPress={handlePayClick}
+      <Button
+        onPress={handlePayClick}
         disabled={!numpadValue || !isSelectedProduct}
-            isLoading={orderMutation.isPending}
-          >
-            Оплатить
-          </Button>
-        </View>
+        isLoading={orderMutation.isPending}
+      >
+        Оплатить
+      </Button>
+    </View>
   );
 };
 

@@ -29,16 +29,13 @@ export interface MachineProduct {
   last_restocked: string | null;
   created_at: string;
   products: {
-    category: string;
     id: number;
-    image: string;
     name: string;
     price: number;
     sku: string;
-  };
-  vending_machines: {
-    serial_number: string;
-  };
+    image: string | null;
+    category: string | null;
+  } | null;
 }
 
 export interface Product {
@@ -66,38 +63,25 @@ export interface OrderWithStatus extends Order {
   status: "created" | "paid" | "failed" | "cancelled";
 }
 
-export interface OrderWithDetails extends OrderWithStatus {
-  created_at: string;
+export interface OrderWithDetails {
   id: number;
-  product_name: string;
-  product_price: number;
-  slot_index: number;
-  machine_command: string;
-}
-
-// API Response types
-export interface ApiResponse<T = any> {
-  data?: T;
-  error?: string;
+  status: "created" | "paid" | "failed" | "cancelled";
+  created_at: string;
+  slot_index: number | null;
+  product_name: string | null;
+  product_price: number | null;
+  machine_command: string | null;
 }
 
 export interface OrderCreateRequest {
   slot_index: number;
 }
 
-// API function types
-export interface MachineApi {
-  getMachine: (serialNumber: string) => Promise<ApiResponse<Machine>>;
-  createOrder: (
-    serialNumber: string,
-    data: OrderCreateRequest
-  ) => Promise<ApiResponse<Order>>;
-  getMachineProducts: (
-    serialNumber: string
-  ) => Promise<ApiResponse<MachineProduct[]>>;
-}
-
-export interface OrdersApi {
-  getOrder: (orderId: number) => Promise<ApiResponse<OrderWithDetails>>;
-  cancelOrder: (orderId: number) => Promise<ApiResponse<OrderWithStatus>>;
+// API Response types - matches vending-admin response format
+export interface ApiResponse<T = any> {
+  data: {
+    success: boolean;
+    message?: string;
+    data?: T;
+  };
 }

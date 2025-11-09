@@ -3,7 +3,7 @@ import { machinesQueries } from "./machines.rq";
 
 export function useMachine(serialNumber: string | null) {
   return useQuery({
-    ...machinesQueries.machine(serialNumber || ""),
+    ...machinesQueries.machine(),
     enabled: Boolean(serialNumber),
   });
 }

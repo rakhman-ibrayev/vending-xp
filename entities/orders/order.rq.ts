@@ -1,10 +1,10 @@
-import { ordersApi } from "@/lib/api";
+import { getOrder } from "@/lib/api";
 
 export const ordersQueries = {
   all: () => ["orders"],
 
   order: (id: number) => ({
     queryKey: [...ordersQueries.all(), id],
-    queryFn: () => ordersApi.getOrder(id),
+    queryFn: () => getOrder(id),
   }),
 };

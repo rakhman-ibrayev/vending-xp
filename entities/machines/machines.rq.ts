@@ -1,15 +1,15 @@
-import { machineApi } from "@/lib/api";
+import { getMachine, getMachineProducts } from "@/lib/api";
 
 export const machinesQueries = {
   all: () => ["machines"],
 
-  machine: (serialNumber: string) => ({
-    queryKey: [...machinesQueries.all(), serialNumber],
-    queryFn: () => machineApi.getMachine(serialNumber),
+  machine: () => ({
+    queryKey: [...machinesQueries.all(), "current"],
+    queryFn: () => getMachine(),
   }),
 
-  machineProducts: (serialNumber: string) => ({
-    queryKey: [...machinesQueries.machine(serialNumber).queryKey, "products"],
-    queryFn: () => machineApi.getMachineProducts(serialNumber),
+  machineProducts: () => ({
+    queryKey: [...machinesQueries.machine().queryKey, "products"],
+    queryFn: () => getMachineProducts(),
   }),
 };

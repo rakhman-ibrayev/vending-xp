@@ -17,16 +17,11 @@ onlineManager.setEventListener((setOnline) => {
   const eventSubscription = Network.addNetworkStateListener((state) => {
     setOnline(!!state.isConnected);
   });
+
   return eventSubscription.remove;
 });
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: false,
-    },
-  },
-});
+const queryClient = new QueryClient();
 
 export default function RootLayout() {
   const [loaded] = useFonts({
