@@ -14,6 +14,8 @@ const MachineRegistration = ({ children }: MachineRegistrationProps) => {
   const serialNumber = useSerialNumber();
   const machineQuery = useMachine(serialNumber);
 
+  if (!serialNumber) return null;
+
   if (machineQuery.isLoading || machineQuery.isFetching) {
     return (
       <View style={styles.container}>
@@ -23,38 +25,53 @@ const MachineRegistration = ({ children }: MachineRegistrationProps) => {
   }
 
   if (machineQuery.isError) {
-    const qrValue = `${process.env.EXPO_PUBLIC_ADMIN_APP_URL}?serial_number=${serialNumber}&latitude=${location?.coords.latitude}&longitude=${location?.coords.longitude}`;
+    const machineAddUrl = new URL(
+      `${process.env.EXPO_PUBLIC_ADMIN_APP_URL}/machines?serial_number=${serialNumber}`
+    );
+
+    if (location?.coords) {
+      machineAddUrl.searchParams.set(
+        "latitude",
+        location.coords.latitude.toString()
+      );
+
+      machineAddUrl.searchParams.set(
+        "longitude",
+        location.coords.longitude.toString()
+      );
+    }
 
     return (
       <View style={styles.container}>
         <Text style={styles.title}>Аппарат не зарегистрирован</Text>
 
         <View style={styles.card}>
-          <QRCode size={180} value={qrValue} />
+          <QRCode size={200} value={machineAddUrl.toString()} />
 
           <Text style={styles.cardText}>
             Отсканируйте QR-код или перейдите в панель добавления аппаратов и
             вручную введите следующие данные:
           </Text>
 
+          <View style={styles.infoSection}>
           <View style={styles.infoRow}>
             <Text style={styles.label}>Серийный номер:</Text>
-
             <Text style={styles.value}>{serialNumber || "—"}</Text>
           </View>
 
+            {location?.coords && (
+              <>
           <View style={styles.infoRow}>
             <Text style={styles.label}>Широта:</Text>
-
-            <Text style={styles.value}>{location?.coords.latitude ?? "—"}</Text>
+                  <Text style={styles.value}>{location.coords.latitude}</Text>
           </View>
 
           <View style={styles.infoRow}>
             <Text style={styles.label}>Долгота:</Text>
-
-            <Text style={styles.value}>
-              {location?.coords.longitude ?? "—"}
-            </Text>
+                  <Text style={styles.value}>{location.coords.longitude}</Text>
+                </View>
+              </>
+            )}
           </View>
 
           <Button
@@ -64,7 +81,7 @@ const MachineRegistration = ({ children }: MachineRegistrationProps) => {
             Проверить регистрацию
           </Button>
 
-          <Text style={styles.refreshHint}>
+          <Text style={styles.hint}>
             После регистрации аппарата нажмите кнопку выше, чтобы обновить
             статус.
           </Text>
@@ -87,11 +104,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     alignItems: "center",
     justifyContent: "center",
+    gap: 24,
   },
   title: {
-    fontSize: 26,
+    fontSize: 32,
     fontWeight: "bold",
-    marginBottom: 24,
     color: "#222",
     textAlign: "center",
   },
@@ -100,18 +117,17 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 24,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
     maxWidth: 340,
-    marginBottom: 24,
+    gap: 16,
   },
   cardText: {
-    fontSize: 16,
+    fontSize: 18,
     color: "#444",
     textAlign: "center",
     marginVertical: 16,
+  },
+  infoSection: {
+    gap: 8,
   },
   infoRow: {
     flexDirection: "row",
@@ -119,6 +135,7 @@ const styles = StyleSheet.create({
     width: "100%",
     marginTop: 8,
     paddingHorizontal: 8,
+    gap: 8,
   },
   label: {
     fontSize: 15,
@@ -129,17 +146,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#222",
     fontWeight: "bold",
+    alignSelf: "flex-end",
   },
   hint: {
-    marginTop: 12,
-    fontSize: 14,
-    color: "#888",
-    textAlign: "center",
-    maxWidth: 340,
-  },
-  refreshHint: {
-    marginTop: 8,
-    fontSize: 13,
+    fontSize: 16,
     color: "#888",
     textAlign: "center",
     maxWidth: 340,

@@ -98,7 +98,7 @@ const Numpad = ({
         {renderButton(0)}
 
         <NumpadButton
-          text={<MaterialIcons name="backspace" color="#8f8f8f" size={20} />}
+          text={<MaterialIcons name="backspace" color="#9ca3af" size={24} />}
           buttonStyle={styles.backSpace}
           onPress={onBackspacePress}
         />
@@ -114,34 +114,24 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 16,
-    gap: 16,
+    marginBottom: 12,
+    gap: 12,
   },
   button: {
     flex: 1,
-    height: 80,
-    backgroundColor: "transparent",
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 8,
+    height: 100,
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
   },
   backSpace: {
-    backgroundColor: "#f9fafb",
+    backgroundColor: "#ffffff",
   },
   buttonText: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#374151",
+    fontSize: 32,
+    fontWeight: "600",
+    color: "#1f2937",
   },
   emptySpace: {
     flex: 1,

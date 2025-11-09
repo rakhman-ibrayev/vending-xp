@@ -78,7 +78,7 @@ const Order = () => {
   }, [order?.status]);
 
   return (
-    <PageContainer>
+    <PageContainer style={styles.container}>
       <View style={styles.card}>
         {showConfirmation && (
           <Animated.View
@@ -107,7 +107,7 @@ const Order = () => {
             </Text>
 
             <View style={styles.qrContainer}>
-              <QRCode size={180} value={qrValue} />
+              <QRCode size={200} value={qrValue} />
             </View>
 
             {order && (
@@ -157,70 +157,69 @@ const Order = () => {
 };
 
 const styles = StyleSheet.create({
-  card: {
-    flex: 1,
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 24,
+  container: {
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
+  },
+  card: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    width: "90%",
     maxWidth: 400,
   },
+
   title: {
-    fontSize: 26,
+    fontSize: 32,
     fontWeight: "bold",
-    marginBottom: 12,
+    marginBottom: 16,
     color: "#222",
     textAlign: "center",
   },
   instruction: {
-    fontSize: 16,
+    fontSize: 18,
     color: "#444",
     textAlign: "center",
-    marginBottom: 16,
   },
   qrContainer: {
     backgroundColor: "#f6f8fa",
     borderRadius: 12,
     padding: 16,
-    marginBottom: 20,
+    marginBlock: 44,
   },
+
   orderInfo: {
     width: "100%",
-    marginBottom: 16,
-    marginTop: 8,
+    marginBottom: 36,
+    gap: 8,
   },
   infoRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 6,
     paddingHorizontal: 4,
   },
   label: {
-    fontSize: 15,
+    fontSize: 18,
     color: "#888",
     fontWeight: "500",
   },
   value: {
-    fontSize: 15,
+    fontSize: 18,
     color: "#222",
     fontWeight: "bold",
   },
+
   cancelButton: {
-    marginTop: 12,
     width: "100%",
   },
+
   hint: {
-    marginTop: 14,
-    fontSize: 13,
+    marginTop: 18,
+    fontSize: 16,
     color: "#888",
     textAlign: "center",
-    maxWidth: 340,
   },
+
   pending: {
     color: "#FFA000",
     fontSize: 16,
@@ -228,6 +227,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: "center",
   },
+
   error: {
     color: "#e53935",
     fontSize: 16,
@@ -235,6 +235,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: "center",
   },
+
   confirmation: {
     alignItems: "center",
     justifyContent: "center",

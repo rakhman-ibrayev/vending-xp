@@ -1,7 +1,5 @@
 import { Numpad } from "@/components/numpad";
 import { ProductCard } from "@/components/product-card";
-import { BottomSheet } from "@/components/ui/bottom-sheet";
-import { Button } from "@/components/ui/button";
 import { useAddMachineOrder } from "@/entities/machines/use-add-machine-order";
 import { useMachineProducts } from "@/entities/machines/use-machine-products";
 import { useSerialNumber } from "@/entities/machines/use-serial-number";
@@ -9,10 +7,12 @@ import { alert } from "@/lib/alert";
 import { router } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { ItemSelectionHint } from "@/components/item-selection-hint";
+import { formatPrice } from "@/lib/helpers";
+import { Button } from "@/components/ui/button";
 
 const ItemSelection = () => {
   const [numpadValue, setNumpadValue] = useState("");
-  const [isItemModalOpen, setIsItemModalOpen] = useState(false);
 
   const serialNumber = useSerialNumber();
   const orderMutation = useAddMachineOrder();
@@ -26,22 +26,15 @@ const ItemSelection = () => {
 
   const isSelectedProduct = typeof selectedProduct !== "undefined";
 
-  const openModal = () => setIsItemModalOpen(true);
-
-  const closeModal = () => {
-    setIsItemModalOpen(false);
-    setNumpadValue("");
-  };
-
   const handlePayClick = () => {
     if (!serialNumber || !isSelectedProduct) return;
 
     alert({
       title: "Подтвердите свой возраст",
-      message: "Вам есть 16 лет?",
-      type: "warning",
-      positiveText: "Да",
-      negativeText: "Нет",
+      message: "Покупка данного товара доступна лицам старше 16 лет",
+      type: "info",
+      negativeText: "Отмена",
+      positiveText: "Ок",
       overlayClose: true,
       onPositivePress: async () => {
         const { data } = await orderMutation.mutateAsync({
@@ -52,80 +45,152 @@ const ItemSelection = () => {
         });
 
         if (data?.id) {
-          router.navigate({
+          router.replace({
             pathname: "/orders/[orderId]",
-            params: { orderId: data.id },
+            params: { orderId: data.data.id },
           });
         }
       },
     });
   };
 
+  const handleNumberPress = (value: number) => {
+    if (numpadValue.length < 3) {
+      setNumpadValue(`${numpadValue}${value}`);
+    }
+  };
+
+  const handleBackspace = () => {
+    setNumpadValue(numpadValue.slice(0, numpadValue.length - 1));
+  };
+
+  const handleResetNumpad = () => {
+    setNumpadValue("");
+  };
+
+  const renderCharacterBoxes = () => {
+    const chars = numpadValue.split("");
+    const boxes = [];
+
+    for (let i = 0; i < 3; i++) {
+      boxes.push(
+        <View key={i} style={styles.charBox}>
+          <Text style={styles.charText}>{chars[i] || " "}</Text>
+          <View style={styles.charUnderline} />
+        </View>
+      );
+    }
+
+    return boxes;
+  };
+
   return (
-    <>
-      <Text style={styles.input}>{numpadValue}</Text>
+    <View style={styles.container}>
+      <ItemSelectionHint />
+
+      <View style={styles.header}>
+        <View style={styles.slotInfo}>
+          <Text style={styles.slotInfoTitle}>НОМЕР ЯЧЕЙКИ</Text>
+
+          <View style={styles.slotInfoInput}>{renderCharacterBoxes()}</View>
+
+          <Text style={styles.slotInfoPrice}>
+            {selectedProduct &&
+              formatPrice(selectedProduct.products?.price || "")}
+          </Text>
+        </View>
+
+        <View style={styles.productCard}>
+          {selectedProduct && (
+            <ProductCard
+              name={selectedProduct.products?.name || "Неизвестный товар"}
+              imageUrl={selectedProduct.products?.image || ""}
+              description={`Ячейка №${numpadValue}`}
+              onRemove={handleResetNumpad}
+            />
+          )}
+        </View>
+      </View>
 
       <Numpad
-        onNumberPress={(value) => setNumpadValue(`${numpadValue}${value}`)}
-        onBackspacePress={() =>
-          setNumpadValue(numpadValue.slice(0, numpadValue.length - 1))
-        }
+        onNumberPress={handleNumberPress}
+        onBackspacePress={handleBackspace}
       />
-
-      <Button disabled={!numpadValue || !isSelectedProduct} onPress={openModal}>
-        Оплатить
-      </Button>
-
-      <BottomSheet
-        visible={isItemModalOpen}
-        onClose={closeModal}
-        title="Вы выбрали товар"
-      >
-        <ProductCard
-          name={selectedProduct?.products.name || "Неизвестный товар"}
-          price={selectedProduct?.products.price.toString() || ""}
-          imageUrl={selectedProduct?.products.image || ""}
-          description={`Ячейка №${numpadValue}`}
-        />
-
-        <View style={styles.modalControls}>
-          <Button
-            onPress={closeModal}
-            variant="secondary"
-            style={styles.modalControl}
-          >
-            Отмена
-          </Button>
 
           <Button
             onPress={handlePayClick}
-            style={styles.modalControl}
+        disabled={!numpadValue || !isSelectedProduct}
             isLoading={orderMutation.isPending}
           >
             Оплатить
           </Button>
         </View>
-      </BottomSheet>
-    </>
   );
 };
 
 const styles = StyleSheet.create({
-  input: {
-    backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 8,
-    padding: 16,
-    fontSize: 24,
-  },
-  modalControls: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 24,
-  },
-  modalControl: {
+  container: {
+    gap: 24,
+    paddingBlock: 4,
     flex: 1,
+  },
+
+  header: {
+    flex: 1,
+    padding: 32,
+    backgroundColor: "#00aa6f",
+    borderRadius: 16,
+  },
+
+  slotInfo: {
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 16,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    marginTop: 80,
+  },
+  slotInfoTitle: {
+    color: "rgba(255, 255, 255, 0.9)",
+    fontSize: 14,
+    fontWeight: "600",
+    textAlign: "center",
+    letterSpacing: 2,
+  },
+  slotInfoInput: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginBottom: 12,
+    gap: 20,
+  },
+  slotInfoPrice: {
+    color: "#fff",
+    fontSize: 32,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+
+  productCard: {
+    width: "100%",
+  },
+
+  charBox: {
+    alignItems: "center",
+  },
+  charText: {
+    color: "#fff",
+    fontSize: 56,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  charUnderline: {
+    width: 60,
+    height: 2,
+    backgroundColor: "#fff",
+    borderRadius: 2,
   },
 });
 

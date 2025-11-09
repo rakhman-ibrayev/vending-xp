@@ -30,3 +30,7 @@ export function parseClimateResponse(hexResponse: string): ClimateData {
     temperature: (parseInt(`${bytes[2]}${bytes[3]}`, 16) - 20) / 10,
   };
 }
+
+export function formatPrice(price: string | number) {
+  return `${price} ₸`;
+}

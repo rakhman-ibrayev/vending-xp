@@ -43,7 +43,7 @@ export default function RootLayout() {
       <SafeAreaView style={styles.container}>
         <AlertProvider>
           <NoInternet>
-            <View style={{ padding: 20 }}>
+            <View style={styles.statusBar}>
               <StatusBar />
             </View>
 
@@ -70,5 +70,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#ffffff",
+  },
+  statusBar: {
+    paddingInline: 32,
+    paddingTop: 40,
   },
 });

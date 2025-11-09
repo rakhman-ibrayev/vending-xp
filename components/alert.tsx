@@ -12,6 +12,7 @@ import {
   View,
   ViewStyle,
 } from "react-native";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 type AlertType = "default" | "success" | "error" | "warning" | "info";
 type AnimationType = "fade" | "scale" | "slide";
@@ -48,8 +49,8 @@ const Alert: React.FC<AlertProps> = ({
   visible = false,
   title = "",
   message = "",
-  positiveText = "OK",
-  negativeText = "Cancel",
+  positiveText,
+  negativeText,
   onPositivePress,
   onNegativePress,
   type = "default",
@@ -108,15 +109,23 @@ const Alert: React.FC<AlertProps> = ({
   const getTypeStyles = () => {
     switch (type) {
       case "success":
-        return { headerBg: "#4CAF50", buttonBg: "#388E3C", icon: "✓" };
+        return {
+          headerBg: "#00aa6f",
+          buttonBg: "#008f5c",
+          icon: "check-circle",
+        };
       case "error":
-        return { headerBg: "#F44336", buttonBg: "#D32F2F", icon: "✕" };
+        return { headerBg: "#dc2626", buttonBg: "#b91c1c", icon: "cancel" };
       case "warning":
-        return { headerBg: "#FF9800", buttonBg: "#F57C00", icon: "⚠" };
+        return { headerBg: "#f97316", buttonBg: "#ea580c", icon: "warning" };
       case "info":
-        return { headerBg: "#2196F3", buttonBg: "#1976D2", icon: "ℹ" };
+        return { headerBg: "#3b82f6", buttonBg: "#2563eb", icon: "info" };
       default:
-        return { headerBg: "#9C27B0", buttonBg: "#7B1FA2", icon: "!" };
+        return {
+          headerBg: "#6b7280",
+          buttonBg: "#4b5563",
+          icon: "notifications",
+        };
     }
   };
 
@@ -177,9 +186,12 @@ const Alert: React.FC<AlertProps> = ({
               customStyles.header,
             ]}
           >
-            <Text style={[styles.headerIcon, customStyles.headerIcon]}>
-              {typeStyles.icon}
-            </Text>
+            <MaterialIcons
+              name={typeStyles.icon as any}
+              size={28}
+              color="white"
+              style={[styles.headerIcon, customStyles.headerIcon]}
+            />
             <Text style={[styles.headerTitle, customStyles.headerTitle]}>
               {title}
             </Text>
@@ -262,6 +274,8 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   container: {
+    width: "90%",
+    maxWidth: 400,
     borderRadius: 16,
     overflow: "hidden",
     ...Platform.select({
@@ -279,29 +293,27 @@ const styles = StyleSheet.create({
   containerLight: { backgroundColor: "#FFFFFF" },
   containerDark: { backgroundColor: "#2C2C2C" },
   header: {
-    padding: 24,
+    padding: 20,
+    paddingHorizontal: 36,
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "center",
   },
   headerIcon: {
-    color: "white",
-    fontSize: 24,
     marginRight: 10,
-    fontWeight: "bold",
   },
   headerTitle: {
     color: "white",
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: "bold",
   },
-  content: { padding: 24 },
+  content: { padding: 18, paddingTop: 0 },
   contentLight: { backgroundColor: "#FFFFFF" },
   contentDark: { backgroundColor: "#2C2C2C" },
   message: {
-    fontSize: 16,
-    lineHeight: 22,
-    marginBottom: 24,
+    fontSize: 22,
+    marginBlock: 36,
+    lineHeight: 28,
     textAlign: "center",
   },
   messageLight: { color: "#666666" },
@@ -318,16 +330,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  positiveButton: { backgroundColor: "#9C27B0" },
+  positiveButton: { backgroundColor: "#6b7280" },
   negativeButton: {
     backgroundColor: "transparent",
     borderWidth: 1,
-    borderColor: "#E0E0E0",
+    borderColor: "#d1d5db",
   },
-  buttonText: { fontSize: 16, fontWeight: "600" },
+  buttonText: { fontSize: 18 },
   buttonTextLight: { color: "#757575" },
   buttonTextDark: { color: "#CCCCCC" },
-  positiveButtonText: { color: "white", fontWeight: "bold" },
+  positiveButtonText: { color: "white" },
 });
 
 export { Alert };

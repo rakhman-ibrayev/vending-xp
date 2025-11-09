@@ -9,14 +9,17 @@ const ItemSelectionHint = () => (
 
 const styles = StyleSheet.create({
   text: {
-    fontSize: 14,
+    fontSize: 18,
     textAlign: "center",
-    backgroundColor: "#f8f8f8",
-    padding: 16,
-    borderRadius: 12,
+    backgroundColor: "#ffffff",
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
   },
   bold: {
-    fontWeight: 700,
+    fontWeight: "700",
+    color: "#1f2937",
   },
 });
 
