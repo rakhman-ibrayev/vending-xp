@@ -1,6 +1,6 @@
-import { EventSubscription } from "react-native";
 import SerialPortAPI, { type SerialPort } from "react-native-serial-port-api";
 import crc16modbus from "./crc16modbus";
+import MockSerialService from "./mock-serial-service";
 
 export interface ConnectionSettings {
   devicePath: string;
@@ -10,10 +10,12 @@ export interface ConnectionSettings {
   parity: 0 | 1 | 2;
 }
 
+const USE_MOCK = process.env.EXPO_PUBLIC_USE_MOCK_SERIAL === "true";
+
 class SerialService {
   private static instance: SerialService;
   private serialPort: SerialPort | null = null;
-  private subscription: EventSubscription | null = null;
+  private subscriptions: Set<(data: number[]) => void> = new Set();
 
   private constructor() {}
 
@@ -24,26 +26,21 @@ class SerialService {
     return SerialService.instance;
   }
 
-  async connect({
-    devicePath,
-    baudRate,
-    dataBits,
-    stopBits,
-    parity,
-  }: ConnectionSettings): Promise<boolean> {
+  async connect(settings: ConnectionSettings): Promise<boolean> {
     try {
-      const serialPort = await SerialPortAPI.open(devicePath, {
-        baudRate,
-        dataBits,
-        stopBits,
-        parity,
-      });
-
-      if (!serialPort) {
-        throw new Error("M109E device not found");
-      }
+      const serialPort = await SerialPortAPI.open(
+        settings.devicePath,
+        settings
+      );
+      if (!serialPort) throw new Error("M109E device not found");
 
       this.serialPort = serialPort;
+
+      this.serialPort.onReceived((buff) => {
+        const bytes = this.hexToBytes(buff.toString("hex"));
+        console.log("onData:", bytes);
+        this.subscriptions.forEach((cb) => cb(bytes));
+      });
 
       return true;
     } catch (error) {
@@ -54,28 +51,22 @@ class SerialService {
 
   async sendCommand(command: number, data: number[]): Promise<void> {
     if (!this.serialPort) throw new Error("Device not connected");
-
     const frame = this.buildFrame(command, data);
     await this.serialPort.send(this.toHexString(frame));
   }
 
-  onData(callback: (data: number[]) => void) {
-    if (!this.serialPort) throw new Error("Device not connected");
-
-    this.subscription = this.serialPort.onReceived((buff) => {
-      console.log("onData: ", buff, Array.from(buff));
-      callback(this.hexToBytes(buff.toString("hex")));
-    });
+  onData(callback: (data: number[]) => void): () => void {
+    this.subscriptions.add(callback);
+    return () => this.subscriptions.delete(callback); // unsubscribe
   }
 
   disconnect() {
-    this.subscription?.remove();
+    this.subscriptions.clear();
     this.serialPort?.close();
     this.serialPort = null;
   }
 
   devicePaths = SerialPortAPI.devicePaths;
-
   deviceNames = SerialPortAPI.deviceNames;
 
   private buildFrame(command: number, data: number[]): number[] {
@@ -96,14 +87,17 @@ class SerialService {
   }
 
   private hexToBytes(hex: string): number[] {
-    const bytes = [];
+    const bytes: number[] = [];
 
     for (let i = 0; i < hex.length; i += 2) {
-      bytes.push(parseInt(hex.substr(i, 2), 16));
+      bytes.push(parseInt(hex.substring(i, i + 2), 16));
     }
 
     return bytes;
   }
 }
 
-export default SerialService.getInstance();
+// Export the appropriate service based on environment
+const service = USE_MOCK ? MockSerialService : SerialService.getInstance();
+
+export default service;

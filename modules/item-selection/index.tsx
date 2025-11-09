@@ -2,8 +2,8 @@ import { Numpad } from "@/components/numpad";
 import { ProductCard } from "@/components/product-card";
 import { useAddMachineOrder } from "@/entities/machines/use-add-machine-order";
 import { useMachineProducts } from "@/entities/machines/use-machine-products";
-import { useSerialNumber } from "@/entities/machines/use-serial-number";
 import { alert } from "@/lib/alert";
+import { useVendingMachine } from "@/entities/machines/use-vending-machine";
 import { router } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 const ItemSelection = () => {
   const [numpadValue, setNumpadValue] = useState("");
 
-  const serialNumber = useSerialNumber();
+  const { serialNumber } = useVendingMachine();
   const orderMutation = useAddMachineOrder();
   const productsQuery = useMachineProducts(serialNumber);
 

@@ -2,7 +2,7 @@ import { PageContainer } from "@/components/page-container";
 import { Button } from "@/components/ui/button";
 import { useCancelOrder } from "@/entities/orders/use-cancel-order";
 import { useOrder } from "@/entities/orders/use-order";
-import VendingMachineAPI from "@/services/vending-machine";
+import { useVendingMachine } from "@/entities/machines/use-vending-machine";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
@@ -13,6 +13,7 @@ const Order = () => {
   const orderId = Number(useLocalSearchParams().orderId);
   const orderQuery = useOrder(orderId, 2000);
   const cancelMutation = useCancelOrder();
+  const { vend } = useVendingMachine();
 
   const [vendStatus, setVendStatus] = useState<
     "idle" | "pending" | "success" | "error"
@@ -40,9 +41,9 @@ const Order = () => {
       setVendStatus("pending");
       setVendError(null);
 
-      VendingMachineAPI.vendProduct(order.slot_index - 1)
-        .then((result: any) => {
-          if (result?.success) {
+      vend(order.slot_index - 1)
+        .then((result) => {
+          if (result.success) {
             setVendStatus("success");
             setShowConfirmation(true);
 
@@ -57,20 +58,15 @@ const Order = () => {
             }, 2500);
           } else {
             setVendStatus("error");
-            setVendError(
-              result?.error || "Не удалось выдать товар. Попробуйте позже."
-            );
+            setVendError("Не удалось выдать товар. Попробуйте позже.");
           }
         })
-        .catch((err) => {
+        .catch(() => {
           setVendStatus("error");
-          setVendError(
-            typeof err === "string"
-              ? err
-              : err?.message || "Не удалось выдать товар. Попробуйте позже."
-          );
+          setVendError("Не удалось выдать товар. Попробуйте позже.");
         });
     }
+
     return () => {
       if (timeout) clearTimeout(timeout);
     };

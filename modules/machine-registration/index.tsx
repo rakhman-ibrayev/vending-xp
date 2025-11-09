@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useMachine } from "@/entities/machines/use-machine";
-import { useSerialNumber } from "@/entities/machines/use-serial-number";
 import { useGetLocation } from "@/lib/hooks/use-get-location";
+import { useVendingMachine } from "@/entities/machines/use-vending-machine";
 import { StyleSheet, Text, View } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 
@@ -11,7 +11,7 @@ interface MachineRegistrationProps {
 
 const MachineRegistration = ({ children }: MachineRegistrationProps) => {
   const { location } = useGetLocation();
-  const serialNumber = useSerialNumber();
+  const { serialNumber } = useVendingMachine();
   const machineQuery = useMachine(serialNumber);
 
   if (!serialNumber) return null;
@@ -54,20 +54,20 @@ const MachineRegistration = ({ children }: MachineRegistrationProps) => {
           </Text>
 
           <View style={styles.infoSection}>
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Серийный номер:</Text>
-            <Text style={styles.value}>{serialNumber || "—"}</Text>
-          </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>Серийный номер:</Text>
+              <Text style={styles.value}>{serialNumber || "—"}</Text>
+            </View>
 
             {location?.coords && (
               <>
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Широта:</Text>
+                <View style={styles.infoRow}>
+                  <Text style={styles.label}>Широта:</Text>
                   <Text style={styles.value}>{location.coords.latitude}</Text>
-          </View>
+                </View>
 
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Долгота:</Text>
+                <View style={styles.infoRow}>
+                  <Text style={styles.label}>Долгота:</Text>
                   <Text style={styles.value}>{location.coords.longitude}</Text>
                 </View>
               </>

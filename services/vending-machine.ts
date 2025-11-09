@@ -30,14 +30,16 @@ class VendingMachineAPI {
 
     if (connected) {
       this.isInitialized = true;
+      await this.setLights(true);
+      await this.setCompressor(true);
     }
 
     return connected;
   }
 
   static close() {
-    this.setLights(false);
-    this.setCompressor(false);
+    this.setLights(false).catch(() => {});
+    this.setCompressor(false).catch(() => {});
     SerialService.disconnect();
     this.isInitialized = false;
   }
@@ -48,6 +50,7 @@ class VendingMachineAPI {
     return new Promise((resolve) => {
       SerialService.devicePaths((paths: string[]) => {
         const devices = paths.map((path) => ({ name: path, path }));
+
         resolve(devices);
       });
     });
@@ -59,13 +62,12 @@ class VendingMachineAPI {
 
     await SerialService.sendCommand(command, data);
 
-    return new Promise((resolve) => {
-      SerialService.onData((response) => {
-        if (response[1] !== command) return;
+    return this.waitForResponse(command, (response) => {
+      if (response.length < 20) return null;
 
-        const tempRaw = (response[2] << 8) | response[3];
-        resolve(tempRaw / 10.0); // Convert to float
-      });
+      const raw = (response[2] << 8) | response[3];
+
+      return (raw - 500) / 10; // matches doc: 01F4=500 → 50.0°C
     });
   }
 
@@ -75,20 +77,14 @@ class VendingMachineAPI {
 
     await SerialService.sendCommand(command, data);
 
-    return new Promise((resolve) => {
-      SerialService.onData((response) => {
-        if (response[1] !== command) return;
+    return this.waitForResponse(command, (response) => {
+      if (response.length < 20) return null;
 
-        // Extract serial number bytes (Z1-Z12, positions 2-13 in the 20-byte frame)
-        const serialBytes = response.slice(2, 14);
+      const serialBytes = response.slice(2, 14); // Z1–Z12
 
-        // Convert to hex string (matches documentation format)
-        const serialHex = serialBytes
-          .map((b) => b.toString(16).padStart(2, "0").toUpperCase())
-          .join("");
-
-        resolve(serialHex);
-      });
+      return serialBytes
+        .map((b) => b.toString(16).padStart(2, "0").toUpperCase())
+        .join("");
     });
   }
 
@@ -115,69 +111,90 @@ class VendingMachineAPI {
 
     await SerialService.sendCommand(command, data);
 
-    return new Promise((resolve) => {
-      SerialService.onData((response) => {
-        if (response[1] !== command) return;
+    return this.waitForResponse(command, (response) => {
+      const status = response[3]; // Z3
 
-        // Parse the response according to protocol section 5.3
-        const status = response[3]; // Z3: Implementation results
-
-        if (status === 0x00) {
-          resolve({ success: true, status });
-        } else {
-          resolve({
-            success: false,
-            status,
-            error: this.parseError(status),
-          });
-        }
-      });
+      if (status === 0x00) {
+        return { success: true, status };
+      } else {
+        return {
+          success: false,
+          status,
+          error: this.parseError(status),
+        };
+      }
     });
   }
 
-  static async setCompressor(on: boolean): Promise<void> {
-    const command = 0x08; // Write DO command
-    const data = [
-      1, // Y1: DO index 1 (O2)
-      on ? 1 : 0, // Y2: State (1=ON, 0=OFF)
-      ...Array(14).fill(0), // Padding
-    ];
+  static async setCompressor(on: boolean): Promise<boolean> {
+    const command = 0x08; // Write DO
+    const data = [1, on ? 1 : 0, ...Array(14).fill(0)];
 
     await SerialService.sendCommand(command, data);
+
+    return this.waitForResponse(command, (resp) => {
+      return resp[2] === 1 && resp[3] === (on ? 0xf1 : 0xf0) ? true : null;
+    });
   }
 
-  static async setLights(on: boolean): Promise<void> {
+  static async setLights(on: boolean): Promise<boolean> {
     const command = 0x08; // Write DO
-    const data = [
-      3, // Y1: DO index 1 (O2)
-      on ? 1 : 0, // Y2: State (1=ON, 0=OFF)
-      ...Array(14).fill(0), // Padding
-    ];
+    const data = [3, on ? 1 : 0, ...Array(14).fill(0)];
 
     await SerialService.sendCommand(command, data);
+
+    return this.waitForResponse(command, (resp) => {
+      return resp[2] === 3 && resp[3] === (on ? 0xf1 : 0xf0) ? true : null;
+    });
   }
 
   static listenForResponses(callback: (data: number[]) => void) {
-    SerialService.onData((response) => {
+    return SerialService.onData((response) => {
       if (response.length < 20) return;
 
       const command = response[1];
-
       switch (command) {
         case 0x05: // Motor response
-          const status = response[3];
-          console.log("Motor status:", this.parseError(status));
+          console.log("Motor status:", this.parseError(response[3]));
           break;
         case 0x07: // Temperature
           const temp = ((response[2] << 8) | response[3]) / 10;
           console.log("Temperature:", temp);
           break;
         case 0x08: // DO response
-          console.log("Light state updated");
+          console.log("DO response:", response.slice(2, 4));
           break;
       }
 
       callback(response);
+    });
+  }
+
+  private static waitForResponse<T>(
+    command: number,
+    matcher: (resp: number[]) => T | null,
+    timeout = 1000
+  ): Promise<T> {
+    return new Promise((resolve, reject) => {
+      const unsubscribe = SerialService.onData((resp) => {
+        if (resp[1] !== command) return;
+
+        const result = matcher(resp);
+
+        if (result !== null && result !== undefined) {
+          unsubscribe();
+          resolve(result);
+        }
+      });
+
+      setTimeout(() => {
+        unsubscribe();
+        reject(
+          new Error(
+            `Timeout waiting for response to command 0x${command.toString(16)}`
+          )
+        );
+      }, timeout);
     });
   }
 
