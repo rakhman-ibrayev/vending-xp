@@ -1,56 +1,56 @@
-import { useState, useEffect, useRef } from "react";
-import { Text } from "react-native";
+import { useState, useEffect, useRef } from 'react'
+import { Text } from 'react-native'
 
 interface CountdownProps {
-  numSeconds: number;
-  onFinish: () => void;
+  numSeconds: number
+  onFinish: () => void
 }
 
 const Countdown = ({ numSeconds, onFinish }: CountdownProps) => {
-  const [timeLeft, setTimeLeft] = useState(numSeconds);
-  const finishedRef = useRef(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const onFinishRef = useRef(onFinish);
+  const [timeLeft, setTimeLeft] = useState(numSeconds)
+  const finishedRef = useRef(false)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const onFinishRef = useRef(onFinish)
 
   // Keep onFinish ref updated without restarting countdown
-  onFinishRef.current = onFinish;
+  onFinishRef.current = onFinish
 
   useEffect(() => {
-    finishedRef.current = false;
+    finishedRef.current = false
 
     intervalRef.current = setInterval(() => {
-      setTimeLeft((prev) => {
-        const next = prev - 1;
+      setTimeLeft(prev => {
+        const next = prev - 1
 
         if (next <= 0) {
           // Clear interval
           if (intervalRef.current) {
-            clearInterval(intervalRef.current);
-            intervalRef.current = null;
+            clearInterval(intervalRef.current)
+            intervalRef.current = null
           }
 
           // Call onFinish only once (protection against race conditions)
           if (!finishedRef.current) {
-            finishedRef.current = true;
-            onFinishRef.current();
+            finishedRef.current = true
+            onFinishRef.current()
           }
 
-          return 0;
+          return 0
         }
 
-        return next;
-      });
-    }, 1000);
+        return next
+      })
+    }, 1000)
 
     return () => {
       if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
       }
-    };
-  }, []);
+    }
+  }, [])
 
-  return <Text>{timeLeft}</Text>;
-};
+  return <Text>{timeLeft}</Text>
+}
 
-export { Countdown, type CountdownProps };
+export { Countdown, type CountdownProps }

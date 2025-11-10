@@ -1,6 +1,6 @@
-import { PageContainer } from "@/components/page-container";
-import { ItemSelection } from "@/modules/item-selection";
-import { MachineRegistration } from "@/modules/machine-registration";
+import { PageContainer } from '@/components/page-container'
+import { ItemSelection } from '@/modules/item-selection'
+import { MachineRegistration } from '@/modules/machine-registration'
 
 const VendingController = () => {
   return (
@@ -9,7 +9,7 @@ const VendingController = () => {
         <ItemSelection />
       </MachineRegistration>
     </PageContainer>
-  );
-};
+  )
+}
 
-export default VendingController;
+export default VendingController

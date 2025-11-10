@@ -1,15 +1,15 @@
-import { Buffer } from "buffer";
+import { Buffer } from 'buffer'
 
-export type BufferInput = string | ArrayBuffer | Buffer;
+export type BufferInput = string | ArrayBuffer | Buffer
 
 export interface CRCCalculator<T = BufferInput | Uint8Array> {
-  (value: T, previous?: number): number;
+  (value: T, previous?: number): number
 }
 
 export interface CRCModule extends CRCCalculator<BufferInput> {
-  signed: CRCCalculator<BufferInput>;
-  unsigned: CRCCalculator<BufferInput>;
-  model: string;
+  signed: CRCCalculator<BufferInput>
+  unsigned: CRCCalculator<BufferInput>
+  model: string
 }
 
 let TABLE: number[] | Int32Array = [
@@ -41,21 +41,21 @@ let TABLE: number[] | Int32Array = [
   0x48c0, 0x4980, 0x8941, 0x4b00, 0x8bc1, 0x8a81, 0x4a40, 0x4e00, 0x8ec1,
   0x8f81, 0x4f40, 0x8d01, 0x4dc0, 0x4c80, 0x8c41, 0x4400, 0x84c1, 0x8581,
   0x4540, 0x8701, 0x47c0, 0x4680, 0x8641, 0x8201, 0x42c0, 0x4380, 0x8341,
-  0x4100, 0x81c1, 0x8081, 0x4040,
-];
+  0x4100, 0x81c1, 0x8081, 0x4040
+]
 
-if (typeof Int32Array !== "undefined") {
-  TABLE = new Int32Array(TABLE);
+if (typeof Int32Array !== 'undefined') {
+  TABLE = new Int32Array(TABLE)
 }
 
 const crc16modbus: CRCCalculator<Uint8Array> = (current, previous) => {
-  let crc = typeof previous !== "undefined" ? ~~previous : 0xffff;
+  let crc = typeof previous !== 'undefined' ? ~~previous : 0xffff
 
   for (let index = 0; index < current.length; index++) {
-    crc = (TABLE[(crc ^ current[index]) & 0xff] ^ (crc >> 8)) & 0xffff;
+    crc = (TABLE[(crc ^ current[index]) & 0xff] ^ (crc >> 8)) & 0xffff
   }
 
-  return crc;
-};
+  return crc
+}
 
-export default crc16modbus;
+export default crc16modbus

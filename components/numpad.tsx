@@ -1,20 +1,20 @@
-import type React from "react";
+import type React from 'react'
 import {
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
   type TextStyle,
-  type ViewStyle,
-} from "react-native";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+  type ViewStyle
+} from 'react-native'
+import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 
 interface NumpadButtonProps {
-  text: React.ReactNode;
-  onPress: () => void;
-  disabled?: boolean;
-  buttonStyle?: ViewStyle;
-  buttonTextStyle?: TextStyle;
+  text: React.ReactNode
+  onPress: () => void
+  disabled?: boolean
+  buttonStyle?: ViewStyle
+  buttonTextStyle?: TextStyle
 }
 
 const NumpadButton = ({
@@ -22,7 +22,7 @@ const NumpadButton = ({
   disabled,
   onPress,
   buttonTextStyle,
-  text,
+  text
 }: NumpadButtonProps) => (
   <TouchableOpacity
     style={[styles.button, buttonStyle, disabled && styles.disabled]}
@@ -34,21 +34,21 @@ const NumpadButton = ({
       style={[
         styles.buttonText,
         buttonTextStyle,
-        disabled && styles.disabledText,
+        disabled && styles.disabledText
       ]}
     >
       {text}
     </Text>
   </TouchableOpacity>
-);
+)
 
 interface NumpadProps {
-  onNumberPress: (digit: number) => void;
-  onBackspacePress: () => void;
-  disabled?: boolean;
-  buttonStyle?: ViewStyle;
-  buttonTextStyle?: TextStyle;
-  containerStyle?: ViewStyle;
+  onNumberPress: (digit: number) => void
+  onBackspacePress: () => void
+  disabled?: boolean
+  buttonStyle?: ViewStyle
+  buttonTextStyle?: TextStyle
+  containerStyle?: ViewStyle
 }
 
 const Numpad = ({
@@ -57,7 +57,7 @@ const Numpad = ({
   disabled = false,
   buttonStyle,
   buttonTextStyle,
-  containerStyle,
+  containerStyle
 }: NumpadProps) => {
   const renderButton = (number: number, style?: ViewStyle) => (
     <NumpadButton
@@ -68,7 +68,7 @@ const Numpad = ({
       buttonTextStyle={buttonTextStyle}
       onPress={() => onNumberPress(number)}
     />
-  );
+  )
 
   return (
     <View style={[styles.container, containerStyle]}>
@@ -104,45 +104,45 @@ const Numpad = ({
         />
       </View>
     </View>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   container: {
-    width: "100%",
+    width: '100%'
   },
   row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginBottom: 12,
-    gap: 12,
+    gap: 12
   },
   button: {
     flex: 1,
     height: 100,
-    backgroundColor: "#ffffff",
+    backgroundColor: '#ffffff',
     borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center'
   },
   backSpace: {
-    backgroundColor: "#ffffff",
+    backgroundColor: '#ffffff'
   },
   buttonText: {
     fontSize: 32,
-    fontWeight: "600",
-    color: "#1f2937",
+    fontWeight: '600',
+    color: '#1f2937'
   },
   emptySpace: {
-    flex: 1,
+    flex: 1
   },
   disabled: {
     opacity: 0.5,
-    backgroundColor: "#f3f4f6",
+    backgroundColor: '#f3f4f6'
   },
   disabledText: {
-    color: "#9ca3af",
-  },
-});
+    color: '#9ca3af'
+  }
+})
 
-export { Numpad, type NumpadProps };
+export { Numpad, type NumpadProps }

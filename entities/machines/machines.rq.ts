@@ -1,15 +1,15 @@
-import { getMachine, getMachineProducts } from "@/lib/api";
+import { getMachine, getMachineProducts } from '@/lib/api'
 
 export const machinesQueries = {
-  all: () => ["machines"],
+  all: () => ['machines'],
 
   machine: () => ({
-    queryKey: [...machinesQueries.all(), "current"],
-    queryFn: () => getMachine(),
+    queryKey: [...machinesQueries.all(), 'current'],
+    queryFn: () => getMachine()
   }),
 
   machineProducts: () => ({
-    queryKey: [...machinesQueries.machine().queryKey, "products"],
-    queryFn: () => getMachineProducts(),
-  }),
-};
+    queryKey: [...machinesQueries.machine().queryKey, 'products'],
+    queryFn: () => getMachineProducts()
+  })
+}

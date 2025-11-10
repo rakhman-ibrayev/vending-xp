@@ -1,44 +1,44 @@
-import { Button } from "@/components/ui/button";
-import { useMachine } from "@/entities/machines/use-machine";
-import { useGetLocation } from "@/lib/hooks/use-get-location";
-import { useVendingMachine } from "@/entities/machines/use-vending-machine";
-import { StyleSheet, Text, View } from "react-native";
-import QRCode from "react-native-qrcode-svg";
+import { Button } from '@/components/ui/button'
+import { useMachine } from '@/entities/machines/use-machine'
+import { useGetLocation } from '@/lib/hooks/use-get-location'
+import { useVendingMachine } from '@/entities/machines/use-vending-machine'
+import { StyleSheet, Text, View } from 'react-native'
+import QRCode from 'react-native-qrcode-svg'
 
 interface MachineRegistrationProps {
-  children?: React.ReactNode;
+  children?: React.ReactNode
 }
 
 const MachineRegistration = ({ children }: MachineRegistrationProps) => {
-  const { location } = useGetLocation();
-  const { serialNumber } = useVendingMachine();
-  const machineQuery = useMachine(serialNumber);
+  const { location } = useGetLocation()
+  const { serialNumber } = useVendingMachine()
+  const machineQuery = useMachine(serialNumber)
 
-  if (!serialNumber) return null;
+  if (!serialNumber) return null
 
   if (machineQuery.isLoading || machineQuery.isFetching) {
     return (
       <View style={styles.container}>
         <Text>Загрузка...</Text>
       </View>
-    );
+    )
   }
 
   if (machineQuery.isError) {
     const machineAddUrl = new URL(
       `${process.env.EXPO_PUBLIC_ADMIN_APP_URL}/machines?serial_number=${serialNumber}`
-    );
+    )
 
     if (location?.coords) {
       machineAddUrl.searchParams.set(
-        "latitude",
+        'latitude',
         location.coords.latitude.toString()
-      );
+      )
 
       machineAddUrl.searchParams.set(
-        "longitude",
+        'longitude',
         location.coords.longitude.toString()
-      );
+      )
     }
 
     return (
@@ -56,7 +56,7 @@ const MachineRegistration = ({ children }: MachineRegistrationProps) => {
           <View style={styles.infoSection}>
             <View style={styles.infoRow}>
               <Text style={styles.label}>Серийный номер:</Text>
-              <Text style={styles.value}>{serialNumber || "—"}</Text>
+              <Text style={styles.value}>{serialNumber || '—'}</Text>
             </View>
 
             {location?.coords && (
@@ -75,7 +75,7 @@ const MachineRegistration = ({ children }: MachineRegistrationProps) => {
           </View>
 
           <Button
-            style={{ marginTop: 20, width: "100%" }}
+            style={{ marginTop: 20, width: '100%' }}
             onPress={machineQuery.refetch}
           >
             Проверить регистрацию
@@ -91,69 +91,69 @@ const MachineRegistration = ({ children }: MachineRegistrationProps) => {
           После регистрации аппарат будет доступен для управления.
         </Text>
       </View>
-    );
+    )
   }
 
-  return children;
-};
+  return children
+}
 
 const styles = StyleSheet.create({
   container: {
     padding: 20,
     flex: 1,
-    backgroundColor: "#ffffff",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 24,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 24
   },
   title: {
     fontSize: 32,
-    fontWeight: "bold",
-    color: "#222",
-    textAlign: "center",
+    fontWeight: 'bold',
+    color: '#222',
+    textAlign: 'center'
   },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     borderRadius: 16,
     padding: 24,
-    alignItems: "center",
+    alignItems: 'center',
     maxWidth: 340,
-    gap: 16,
+    gap: 16
   },
   cardText: {
     fontSize: 18,
-    color: "#444",
-    textAlign: "center",
-    marginVertical: 16,
+    color: '#444',
+    textAlign: 'center',
+    marginVertical: 16
   },
   infoSection: {
-    gap: 8,
+    gap: 8
   },
   infoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
     marginTop: 8,
     paddingHorizontal: 8,
-    gap: 8,
+    gap: 8
   },
   label: {
     fontSize: 15,
-    color: "#888",
-    fontWeight: "500",
+    color: '#888',
+    fontWeight: '500'
   },
   value: {
     fontSize: 15,
-    color: "#222",
-    fontWeight: "bold",
-    alignSelf: "flex-end",
+    color: '#222',
+    fontWeight: 'bold',
+    alignSelf: 'flex-end'
   },
   hint: {
     fontSize: 16,
-    color: "#888",
-    textAlign: "center",
-    maxWidth: 340,
-  },
-});
+    color: '#888',
+    textAlign: 'center',
+    maxWidth: 340
+  }
+})
 
-export { MachineRegistration, type MachineRegistrationProps };
+export { MachineRegistration, type MachineRegistrationProps }

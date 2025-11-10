@@ -1,49 +1,49 @@
-"use client";
+'use client'
 
-import { useNetworkState } from "expo-network";
-import type React from "react";
-import { useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { useNetworkState } from 'expo-network'
+import type React from 'react'
+import { useEffect, useState } from 'react'
+import { StyleSheet, Text, View } from 'react-native'
+import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 
 const formatDateTime = (date: Date, dateFormat: string) => {
   return date.toLocaleString(dateFormat, {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-};
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  })
+}
 
 interface StatusBarProps {
-  showWifi?: boolean;
-  dateFormat?: "ru-RU" | "en-US";
-  backgroundColor?: string;
-  textColor?: string;
-  borderColor?: string;
-  borderRadius?: number;
+  showWifi?: boolean
+  dateFormat?: 'ru-RU' | 'en-US'
+  backgroundColor?: string
+  textColor?: string
+  borderColor?: string
+  borderRadius?: number
 }
 
 const StatusBar = ({
   showWifi = true,
-  dateFormat = "ru-RU",
-  backgroundColor = "#ffffff",
-  textColor = "#000000",
-  borderColor = "#e5e7eb",
-  borderRadius = 8,
+  dateFormat = 'ru-RU',
+  backgroundColor = '#ffffff',
+  textColor = '#000000',
+  borderColor = '#e5e7eb',
+  borderRadius = 8
 }: StatusBarProps) => {
-  const { isConnected } = useNetworkState();
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const { isConnected } = useNetworkState()
+  const [currentTime, setCurrentTime] = useState(new Date())
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
+      setCurrentTime(new Date())
+    }, 1000)
 
-    return () => clearInterval(timer);
-  }, []);
+    return () => clearInterval(timer)
+  }, [])
 
   return (
     <View
@@ -52,8 +52,8 @@ const StatusBar = ({
         {
           backgroundColor,
           borderColor,
-          borderRadius,
-        },
+          borderRadius
+        }
       ]}
     >
       {showWifi && (
@@ -63,7 +63,7 @@ const StatusBar = ({
           )}
 
           <Text style={[styles.wifiText, { color: textColor }]}>
-            {isConnected ? "Подключено" : "Нет соединения"}
+            {isConnected ? 'Подключено' : 'Нет соединения'}
           </Text>
         </View>
       )}
@@ -72,31 +72,31 @@ const StatusBar = ({
         {formatDateTime(currentTime, dateFormat)}
       </Text>
     </View>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 12,
     paddingVertical: 12,
-    borderWidth: 1,
+    borderWidth: 1
   },
   wifiContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8
   },
   wifiText: {
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: '500'
   },
   timeText: {
     fontSize: 14,
-    fontFamily: "monospace",
-  },
-});
+    fontFamily: 'monospace'
+  }
+})
 
-export { StatusBar, type StatusBarProps };
+export { StatusBar, type StatusBarProps }
