@@ -1,17 +1,29 @@
 import { PageContainer } from "@/components/page-container";
 import { Button } from "@/components/ui/button";
+import { Countdown } from "@/components/countdown";
 import { useCancelOrder } from "@/entities/orders/use-cancel-order";
 import { useOrder } from "@/entities/orders/use-order";
 import { useVendingMachine } from "@/entities/machines/use-vending-machine";
+import { alert } from "@/lib/alert";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Animated, StyleSheet, Text, View } from "react-native";
+import {
+  Animated,
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+} from "react-native";
 import QRCode from "react-native-qrcode-svg";
+
+const PAYMENT_TIMEOUT_MS = 60000; // 1 minute
+const WARNING_TIMEOUT_S = 30; // 30 seconds
 
 const Order = () => {
   const orderId = Number(useLocalSearchParams().orderId);
-  const orderQuery = useOrder(orderId, 2000);
+
+  const orderQuery = useOrder(orderId, 3000);
   const cancelMutation = useCancelOrder();
   const { vend } = useVendingMachine();
 
@@ -22,22 +34,73 @@ const Order = () => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const confirmationOpacity = useRef(new Animated.Value(0)).current;
 
-  const order = orderQuery.data?.data;
+  const [showWarning, setShowWarning] = useState(false);
+  const warningTimerRef = useRef<number | null>(null);
+
+  const order = orderQuery.data?.data.data;
 
   // Cancel order handler
   const handleCancelOrder = () => {
+    alert({
+      title: "Отмена заказа",
+      message: "Вы уверены, что хотите отменить заказ?",
+      type: "warning",
+      positiveText: "Да, отменить",
+      negativeText: "Нет",
+      onPositivePress: () => {
+        if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
+        cancelMutation.mutate(orderId);
+        router.replace("/");
+      },
+    });
+  };
+
+  // Handle timeout expiration
+  const handleTimeoutExpired = () => {
     cancelMutation.mutate(orderId);
-    router.navigate("/");
+    router.replace("/");
+  };
+
+  // Restart the timer
+  const handleRestartTimer = () => {
+    setShowWarning(false);
+
+    if (warningTimerRef.current) {
+      clearTimeout(warningTimerRef.current);
+    }
+
+    // Start a new timer
+    warningTimerRef.current = setTimeout(() => {
+      setShowWarning(true);
+    }, PAYMENT_TIMEOUT_MS);
   };
 
   // Example QR value, replace with real data if needed
   const qrValue = `https://kaspi.kz/pay/{serviceName}?service_id={serviceId}&{parameterId}=XXXX`;
 
+  // Payment timeout logic
+  useEffect(() => {
+    // After 1 minute, show warning countdown
+    warningTimerRef.current = setTimeout(() => {
+      setShowWarning(true);
+    }, PAYMENT_TIMEOUT_MS);
+
+    return () => {
+      if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
+    };
+  }, []);
+
   // Vend product when order is paid
   useEffect(() => {
     let timeout: number | undefined;
 
-    if (order?.status === "paid" && vendStatus === "idle") {
+    if (
+      order?.status === "paid" &&
+      vendStatus === "idle" &&
+      order.slot_index !== null
+    ) {
+      if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
+      setShowWarning(false);
       setVendStatus("pending");
       setVendError(null);
 
@@ -54,7 +117,7 @@ const Order = () => {
             }).start();
 
             timeout = setTimeout(() => {
-              router.navigate("/");
+              router.replace("/");
             }, 2500);
           } else {
             setVendStatus("error");
@@ -102,27 +165,58 @@ const Order = () => {
               Отсканируйте QR-код в приложении Kaspi.kz для оплаты заказа
             </Text>
 
+            {showWarning && (
+              <View style={styles.warningBanner}>
+                <View style={styles.warningContent}>
+                  <MaterialIcons name="warning" size={24} color="#f97316" />
+
+                  <Text style={styles.warningText}>
+                    Страница закроется через{" "}
+                    <Countdown
+                      numSeconds={WARNING_TIMEOUT_S}
+                      onFinish={handleTimeoutExpired}
+                    />{" "}
+                    сек
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.stayButton}
+                  onPress={handleRestartTimer}
+                >
+                  <Text style={styles.stayButtonText}>
+                    Нажмите, чтобы остаться
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
             <View style={styles.qrContainer}>
               <QRCode size={200} value={qrValue} />
             </View>
 
             {order && (
-              <View style={styles.orderInfo}>
-                <View style={styles.infoRow}>
-                  <Text style={styles.label}>Товар:</Text>
-                  <Text style={styles.value}>{order.product_name}</Text>
-                </View>
+              <>
+                <Text
+                  style={styles.productName}
+                  numberOfLines={3}
+                  ellipsizeMode="tail"
+                >
+                  {order.product_name}
+                </Text>
 
-                <View style={styles.infoRow}>
-                  <Text style={styles.label}>Цена:</Text>
-                  <Text style={styles.value}>{order.product_price} ₸</Text>
-                </View>
+                <View style={styles.orderInfo}>
+                  <View style={styles.infoRow}>
+                    <Text style={styles.label}>Цена:</Text>
+                    <Text style={styles.value}>{order.product_price} ₸</Text>
+                  </View>
 
-                <View style={styles.infoRow}>
-                  <Text style={styles.label}>Ячейка:</Text>
-                  <Text style={styles.value}>{order.slot_index}</Text>
+                  <View style={styles.infoRow}>
+                    <Text style={styles.label}>Ячейка:</Text>
+                    <Text style={styles.value}>{order.slot_index}</Text>
+                  </View>
                 </View>
-              </View>
+              </>
             )}
 
             {vendStatus === "pending" && (
@@ -177,11 +271,51 @@ const styles = StyleSheet.create({
     color: "#444",
     textAlign: "center",
   },
+  warningBanner: {
+    backgroundColor: "#fff7ed",
+    borderWidth: 2,
+    borderColor: "#f97316",
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 24,
+    gap: 12,
+  },
+  warningContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+  },
+  warningText: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#ea580c",
+  },
+  stayButton: {
+    backgroundColor: "#f97316",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  stayButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
   qrContainer: {
     backgroundColor: "#f6f8fa",
     borderRadius: 12,
     padding: 16,
-    marginBlock: 44,
+    marginTop: 44,
+  },
+
+  productName: {
+    fontSize: 24,
+    color: "#222",
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBlock: 36,
   },
 
   orderInfo: {

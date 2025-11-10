@@ -18,7 +18,9 @@ const ProductCard = ({
     <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="cover" />
 
     <View style={styles.info}>
-      <Text style={styles.name}>{name}</Text>
+      <Text style={styles.name} numberOfLines={1} ellipsizeMode="tail">
+        {name}
+      </Text>
       <Text style={styles.description}>{description}</Text>
     </View>
 
@@ -49,6 +51,7 @@ const styles = StyleSheet.create({
   },
   info: {
     gap: 4,
+    flex: 1,
   },
   name: {
     fontSize: 18,
