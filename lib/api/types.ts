@@ -63,14 +63,13 @@ export interface OrderWithStatus extends Order {
   status: 'created' | 'paid' | 'failed' | 'cancelled'
 }
 
-export interface OrderWithDetails {
-  id: number
-  status: 'created' | 'paid' | 'failed' | 'cancelled'
+export interface OrderWithDetails extends OrderWithStatus {
   created_at: string
   slot_index: number | null
   product_name: string | null
   product_price: number | null
   machine_command: string | null
+  qr_link: string
 }
 
 export interface OrderCreateRequest {

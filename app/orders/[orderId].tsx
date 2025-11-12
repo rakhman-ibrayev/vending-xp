@@ -71,12 +71,9 @@ const Order = () => {
 
     // Start a new timer
     warningTimerRef.current = setTimeout(() => {
-      setShowWarning(true);
-    }, PAYMENT_TIMEOUT_MS);
-  };
-
-  // Example QR value, replace with real data if needed
-  const qrValue = `https://kaspi.kz/pay/{serviceName}?service_id={serviceId}&{parameterId}=XXXX`;
+      setShowWarning(true)
+    }, PAYMENT_TIMEOUT_MS)
+  }
 
   // Payment timeout logic
   useEffect(() => {
@@ -134,7 +131,9 @@ const Order = () => {
       if (timeout) clearTimeout(timeout);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [order?.status]);
+  }, [order?.status])
+
+  if (!order) return null
 
   return (
     <PageContainer style={styles.container}>
@@ -191,12 +190,10 @@ const Order = () => {
               </View>
             )}
 
-            <View style={styles.qrContainer}>
-              <QRCode size={200} value={qrValue} />
-            </View>
+                <View style={styles.qrContainer}>
+                  <QRCode size={200} value={order.qr_link} />
+                </View>
 
-            {order && (
-              <>
                 <Text
                   style={styles.productName}
                   numberOfLines={3}
@@ -216,8 +213,6 @@ const Order = () => {
                     <Text style={styles.value}>{order.slot_index}</Text>
                   </View>
                 </View>
-              </>
-            )}
 
             {vendStatus === "pending" && (
               <Text style={styles.pending}>Выдача товара...</Text>
