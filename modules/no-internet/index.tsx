@@ -17,7 +17,7 @@ const NoInternet = ({ children }: NoInternetProps) => {
 
   return (
     <PageContainer style={styles.container}>
-      <Text style={{ fontSize: 20 }}>Соединение отсутствует</Text>
+      <Text style={{ fontSize: 26 }}>Соединение отсутствует</Text>
 
       <ExitModal
         onClose={() => setIsExitModalOpen(false)}

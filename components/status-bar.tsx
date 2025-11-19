@@ -5,6 +5,7 @@ import type React from 'react'
 import { useEffect, useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
+import VendingMachineAPI from '../services/vending-machine'
 
 const formatDateTime = (date: Date, dateFormat: string) => {
   return date.toLocaleString(dateFormat, {
@@ -36,6 +37,7 @@ const StatusBar = ({
 }: StatusBarProps) => {
   const { isConnected } = useNetworkState()
   const [currentTime, setCurrentTime] = useState(new Date())
+  const [temperature, setTemperature] = useState<number | null>(null)
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -43,6 +45,18 @@ const StatusBar = ({
     }, 1000)
 
     return () => clearInterval(timer)
+  }, [])
+
+  useEffect(() => {
+    const handleTemperatureChange = (temp: number) => {
+      setTemperature(temp)
+    }
+
+    VendingMachineAPI.onTemperatureChange(handleTemperatureChange)
+
+    return () => {
+      VendingMachineAPI.offTemperatureChange(handleTemperatureChange)
+    }
   }, [])
 
   return (
@@ -68,9 +82,21 @@ const StatusBar = ({
         </View>
       )}
 
-      <Text style={[styles.timeText, { color: textColor }]}>
-        {formatDateTime(currentTime, dateFormat)}
-      </Text>
+      <View style={styles.rightContainer}>
+        <Text style={[styles.timeText, { color: textColor }]}>
+          {formatDateTime(currentTime, dateFormat)}
+        </Text>
+
+        {temperature !== null && (
+          <View style={styles.temperatureContainer}>
+            <MaterialIcons name="thermostat" size={18} color={textColor} />
+
+            <Text style={[styles.temperatureText, { color: textColor }]}>
+              {temperature.toFixed(1)}°C
+            </Text>
+          </View>
+        )}
+      </View>
     </View>
   )
 }
@@ -96,6 +122,20 @@ const styles = StyleSheet.create({
   timeText: {
     fontSize: 14,
     fontFamily: 'monospace'
+  },
+  rightContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12
+  },
+  temperatureContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4
+  },
+  temperatureText: {
+    fontSize: 14,
+    fontWeight: '500'
   }
 })
 

@@ -1,221 +1,388 @@
-import SerialService from "./serial-service";
+import SerialService from './serial-service'
+import * as C from './constants'
+import {
+  hexToInt,
+  parseDOStatus,
+  parseMotorRunResult,
+  parseMotorStatus,
+  buildCommandData
+} from './utils'
 
 export interface InitializationSettings {
-  devicePath?: string;
-  baudRate?: number;
-  dataBits?: number;
-  stopBits?: number;
-  parity?: 0 | 1 | 2;
+  devicePath?: string
+  baudRate?: number
+  dataBits?: number
+  stopBits?: number
+  parity?: 0 | 1 | 2
 }
 
+/**
+ * Static API for interacting with the vending machine hardware.
+ * Handles serial communication, product vending, and status monitoring.
+ */
 class VendingMachineAPI {
-  private static isInitialized = false;
+  private static isInitialized = false
+  private static targetTemperature: number | null = null
+  private static coolingState: C.CoolingState = C.CoolingState.IDLE
+  private static compressorStartTime: number | null = null
+  private static fanStartTime: number | null = null
+  private static restStartTime: number | null = null
+  private static coolingInterval: number | null = null
+  private static temperatureChangeCallbacks: ((temp: number) => void)[] = []
 
+  /**
+   * Initializes the vending machine connection.
+   * Establishes serial communication and turns on lights and compressor.
+   * @param settings - Serial connection settings (defaults provided)
+   * @returns Promise resolving to true if connected successfully
+   */
   static async init({
-    devicePath = "/dev/ttyS1",
-    baudRate = 9600,
-    dataBits = 8,
-    stopBits = 1,
-    parity = 0,
+    devicePath = C.OPTION_DEFAULTS.DEVICE_PATH,
+    baudRate = C.OPTION_DEFAULTS.BAUD_RATE,
+    dataBits = C.OPTION_DEFAULTS.DATA_BITS,
+    stopBits = C.OPTION_DEFAULTS.STOP_BITS,
+    parity = C.OPTION_DEFAULTS.PARITY
   }: InitializationSettings = {}): Promise<boolean> {
-    if (this.isInitialized) return true;
+    if (this.isInitialized) return true
 
     const connected = await SerialService.connect({
       devicePath,
       baudRate,
       dataBits,
       stopBits,
-      parity,
-    });
+      parity
+    })
 
     if (connected) {
-      this.isInitialized = true;
-      await this.setLights(true);
-      await this.setCompressor(true);
+      this.isInitialized = true
+      await this.setLights(true)
     }
 
-    return connected;
+    this.coolingInterval = setInterval(async () => {
+      const currentTemp = await this.getTemperature()
+      this.emitTemperatureChange(currentTemp)
+      await this.startCooling(currentTemp)
+    }, C.COOLING.TEMPERATURE_CHECK_INTERVAL)
+
+    return connected
   }
 
+  /**
+   * Closes the vending machine connection.
+   * Turns off lights and compressor, then disconnects serial communication.
+   */
   static close() {
-    this.setLights(false).catch(() => {});
-    this.setCompressor(false).catch(() => {});
-    SerialService.disconnect();
-    this.isInitialized = false;
+    this.setLights(false)
+    this.setCompressor(false)
+    this.isInitialized = false
+    SerialService.disconnect()
+    if (this.coolingInterval) {
+      clearInterval(this.coolingInterval)
+      this.coolingInterval = null
+    }
+    this.temperatureChangeCallbacks = []
   }
 
-  static async getAvailableDevices(): Promise<
-    { name: string; path: string }[]
-  > {
-    return new Promise((resolve) => {
-      SerialService.devicePaths((paths: string[]) => {
-        const devices = paths.map((path) => ({ name: path, path }));
-
-        resolve(devices);
-      });
-    });
+  /**
+   * Sets the target temperature for the vending machine.
+   * @param temp - Target temperature in Celsius
+   */
+  static setTargetTemperature(temp: number) {
+    this.targetTemperature = temp
   }
 
+  /**
+   * Registers a callback to be called when temperature changes.
+   * @param callback - Function to call with the new temperature value
+   */
+  static onTemperatureChange(callback: (temp: number) => void): void {
+    this.temperatureChangeCallbacks.push(callback)
+  }
+
+  /**
+   * Removes a previously registered temperature change callback.
+   * @param callback - The callback function to remove
+   */
+  static offTemperatureChange(callback: (temp: number) => void): void {
+    const index = this.temperatureChangeCallbacks.indexOf(callback)
+    if (index > -1) {
+      this.temperatureChangeCallbacks.splice(index, 1)
+    }
+  }
+
+  /**
+   * Emits a temperature change event to all registered callbacks.
+   * @param temp - The new temperature value
+   */
+  private static emitTemperatureChange(temp: number): void {
+    this.temperatureChangeCallbacks.forEach(callback => {
+      try {
+        callback(temp)
+      } catch (error) {
+        console.error('Error in temperature change callback:', error)
+      }
+    })
+  }
+
+  /**
+   * Processes the cooling algorithm for the current temperature reading.
+   * This method is called automatically every minute by the cooling interval.
+   * @param currentTemp - Current temperature in Celsius
+   */
+  static async startCooling(currentTemp: number): Promise<void> {
+    if (this.targetTemperature === null) {
+      return
+    }
+
+    switch (this.coolingState) {
+      case C.CoolingState.IDLE:
+        if (
+          currentTemp >
+          this.targetTemperature + C.COOLING.DEFAULT_RECOVERY_OFFSET
+        ) {
+          // Start cooling: turn on fan
+          await this.setFan(true)
+          this.fanStartTime = Date.now()
+          this.coolingState = C.CoolingState.STARTING_COOLING
+        }
+        break
+
+      case C.CoolingState.STARTING_COOLING:
+        if (Date.now() - this.fanStartTime! >= C.COOLING.FAN_START_DELAY) {
+          // 5 minutes - turn on compressor
+          await this.setCompressor(true)
+          this.compressorStartTime = Date.now()
+          this.coolingState = C.CoolingState.COOLING
+        }
+        break
+
+      case C.CoolingState.COOLING:
+        if (currentTemp <= this.targetTemperature) {
+          // Target reached: turn off both
+          await this.setFan(false)
+          await this.setCompressor(false)
+          this.compressorStartTime = null
+          this.fanStartTime = null
+          this.coolingState = C.CoolingState.COOLED
+        } else if (
+          this.compressorStartTime &&
+          Date.now() - this.compressorStartTime >=
+            C.COOLING.COMPRESSOR_MAX_RUNTIME
+        ) {
+          // 3 hours - compressor protection: shut down compressor for rest
+          await this.setCompressor(false)
+          this.restStartTime = Date.now()
+          this.coolingState = C.CoolingState.COMPRESSOR_REST
+        }
+        break
+
+      case C.CoolingState.COOLED:
+        if (
+          currentTemp >=
+          this.targetTemperature + C.COOLING.DEFAULT_RECOVERY_OFFSET
+        ) {
+          // Temperature recovered: restart cooling
+          await this.setFan(true)
+          this.fanStartTime = Date.now()
+          this.coolingState = C.CoolingState.STARTING_COOLING
+        }
+        break
+
+      case C.CoolingState.COMPRESSOR_REST:
+        if (
+          Date.now() - this.restStartTime! >=
+          C.COOLING.COMPRESSOR_REST_DURATION
+        ) {
+          // 15 minutes rest - restart compressor
+          await this.setCompressor(true)
+          this.compressorStartTime = Date.now()
+          this.coolingState = C.CoolingState.COOLING
+        }
+        break
+    }
+  }
+
+  /**
+   * Stops the automatic cooling algorithm and turns off fan and compressor.
+   */
+  static async stopCooling(): Promise<void> {
+    this.coolingState = C.CoolingState.IDLE
+    this.compressorStartTime = null
+    this.fanStartTime = null
+    this.restStartTime = null
+    await this.setFan(false)
+    await this.setCompressor(false)
+  }
+
+  /**
+   * Retrieves the current temperature from the vending machine.
+   * @returns Promise resolving to temperature in Celsius
+   */
   static async getTemperature(): Promise<number> {
-    const command = 0x07; // Read Temp
-    const data = Array(16).fill(0);
+    const command = C.COMMANDS.READ_TEMP
 
-    await SerialService.sendCommand(command, data);
+    await SerialService.sendCommand(command, buildCommandData([]))
 
-    return this.waitForResponse(command, (response) => {
-      if (response.length < 20) return null;
+    return this.waitForResponse(command, response => {
+      if (response.length < C.SIZES.RESPONSE_MIN_LENGTH) return null
 
-      const raw = (response[2] << 8) | response[3];
-
-      return (raw - 500) / 10; // matches doc: 01F4=500 → 50.0°C
-    });
+      return (hexToInt(`${response[2]}${response[3]}`) - 20) / 10
+    })
   }
 
+  /**
+   * Retrieves the serial number of the vending machine.
+   * @returns Promise resolving to serial number as a hex string
+   */
   static async getSerialNumber(): Promise<string> {
-    const command = 0x01; // Read Serial Number
-    const data = Array(16).fill(0);
+    const command = C.COMMANDS.READ_SERIAL
 
-    await SerialService.sendCommand(command, data);
+    await SerialService.sendCommand(command, buildCommandData([]))
 
-    return this.waitForResponse(command, (response) => {
-      if (response.length < 20) return null;
+    return this.waitForResponse(command, response => {
+      if (response.length < C.SIZES.RESPONSE_MIN_LENGTH) return null
 
-      const serialBytes = response.slice(2, 14); // Z1–Z12
+      const serialBytes = response.slice(
+        C.SERIAL.START_INDEX,
+        C.SERIAL.END_INDEX + 1
+      )
 
-      return serialBytes
-        .map((b) => b.toString(16).padStart(2, "0").toUpperCase())
-        .join("");
-    });
+      return serialBytes.map(byte => hexToInt(byte)).join('')
+    })
   }
 
+  /**
+   * Vends a product from the specified slot.
+   * @param slot - Motor slot index (0-based)
+   * @param options - Optional motor configuration
+   * @returns Promise resolving to vend result with success status and error if failed
+   */
   static async vendProduct(
     slot: number,
     options: {
-      motorType?: number;
-      lightScreenMode?: number;
-      delay?: number;
-      timeout?: number;
+      motorType?: number
+      lightScreenMode?: number
+      delay?: number
+      timeout?: number
     } = {}
   ) {
-    const command = 0x05; // Motor Run
-    const data = [
-      slot, // Y1: Motor index
-      options.motorType ?? 0x02, // Y2: Default to 2-wire motor
-      options.lightScreenMode ?? 0x02, // Y3: Default to light screen mode 2
-      options.delay ?? 15, // Y4: Default 1.5s delay
-      0, // Y5: Continue flag
-      options.timeout ?? 70, // Y6: Default 7s timeout
-      2, // Y7: 0.2s lock time
-      ...Array(9).fill(0), // Padding
-    ];
+    const command = C.COMMANDS.MOTOR_RUN
 
-    await SerialService.sendCommand(command, data);
+    await SerialService.sendCommand(
+      command,
+      buildCommandData([
+        slot,
+        options.motorType ?? C.MOTOR_DEFAULTS.MOTOR_TYPE,
+        options.lightScreenMode ?? C.MOTOR_DEFAULTS.LIGHT_SCREEN_MODE,
+        options.delay ?? C.MOTOR_DEFAULTS.DELAY,
+        C.MOTOR_DEFAULTS.CONTINUE,
+        options.timeout ?? C.MOTOR_DEFAULTS.TIMEOUT,
+        C.MOTOR_DEFAULTS.LOCK_TIME
+      ])
+    )
 
-    return this.waitForResponse(command, (response) => {
-      const status = response[3]; // Z3
+    return this.waitForResponse(command, response => {
+      const motorRunResult = hexToInt(response[2])
 
-      if (status === 0x00) {
-        return { success: true, status };
-      } else {
-        return {
-          success: false,
-          status,
-          error: this.parseError(status),
-        };
+      if (motorRunResult === C.MOTOR_RUN_RESULTS.SUCCESS)
+        return { success: true, motorRunResult }
+
+      return {
+        success: false,
+        motorRunResult,
+        error: parseMotorRunResult(motorRunResult)
       }
-    });
+    })
   }
 
+  /**
+   * Retrieves the current motor status.
+   * @returns Promise resolving to human-readable status string
+   */
+  static async getMotorStatus(): Promise<string> {
+    const command = C.COMMANDS.READ_MOTOR_STATUS
+
+    await SerialService.sendCommand(command, buildCommandData([]))
+
+    return this.waitForResponse(command, response => {
+      if (response.length < C.SIZES.RESPONSE_MIN_LENGTH) return null
+
+      return parseMotorStatus(hexToInt(response[4]))
+    })
+  }
+
+  /**
+   * Controls the compressor (cooling system).
+   * @param on - True to turn on, false to turn off
+   * @returns Promise resolving to true if command succeeded
+   */
   static async setCompressor(on: boolean): Promise<boolean> {
-    const command = 0x08; // Write DO
-    const data = [1, on ? 1 : 0, ...Array(14).fill(0)];
-
-    await SerialService.sendCommand(command, data);
-
-    return this.waitForResponse(command, (resp) => {
-      return resp[2] === 1 && resp[3] === (on ? 0xf1 : 0xf0) ? true : null;
-    });
+    return this.setDO(C.DO.COMPRESSOR_INDEX, on)
   }
 
+  /**
+   * Controls the internal lights.
+   * @param on - True to turn on, false to turn off
+   * @returns Promise resolving to true if command succeeded
+   */
   static async setLights(on: boolean): Promise<boolean> {
-    const command = 0x08; // Write DO
-    const data = [3, on ? 1 : 0, ...Array(14).fill(0)];
-
-    await SerialService.sendCommand(command, data);
-
-    return this.waitForResponse(command, (resp) => {
-      return resp[2] === 3 && resp[3] === (on ? 0xf1 : 0xf0) ? true : null;
-    });
+    return this.setDO(C.DO.LIGHTS_INDEX, on)
   }
 
-  static listenForResponses(callback: (data: number[]) => void) {
-    return SerialService.onData((response) => {
-      if (response.length < 20) return;
-
-      const command = response[1];
-      switch (command) {
-        case 0x05: // Motor response
-          console.log("Motor status:", this.parseError(response[3]));
-          break;
-        case 0x07: // Temperature
-          const temp = ((response[2] << 8) | response[3]) / 10;
-          console.log("Temperature:", temp);
-          break;
-        case 0x08: // DO response
-          console.log("DO response:", response.slice(2, 4));
-          break;
-      }
-
-      callback(response);
-    });
+  /**
+   * Controls the fan.
+   * @param on - True to turn on, false to turn off
+   * @returns Promise resolving to true if command succeeded
+   */
+  static async setFan(on: boolean): Promise<boolean> {
+    return this.setDO(C.DO.FAN, on)
   }
 
+  /**
+   * Sets a digital output (DO) on the vending machine.
+   * @param index - The DO index
+   * @param on - True to turn on, false to turn off
+   * @returns Promise resolving to true if command succeeded
+   */
+  private static async setDO(index: number, on: boolean): Promise<boolean> {
+    const command = C.COMMANDS.WRITE_DO
+    const data = buildCommandData([index, on ? 1 : 0])
+
+    await SerialService.sendCommand(command, data)
+
+    return this.waitForResponse(command, resp => parseDOStatus(resp, index, on))
+  }
+
+  /**
+   * Waits for a response matching the specified command and criteria.
+   * @param command - The command byte to match in the response
+   * @param matcher - A function that processes the response data and returns a result or null if not matched
+   * @param timeout - Optional timeout in milliseconds (default is C.TIMEOUT.DEFAULT_MS)
+   * @returns A promise that resolves with the matched result or rejects on timeout
+   */
   private static waitForResponse<T>(
     command: number,
-    matcher: (resp: number[]) => T | null,
-    timeout = 1000
+    matcher: (data: string[]) => T | null,
+    timeout = C.TIMEOUT.DEFAULT_MS
   ): Promise<T> {
     return new Promise((resolve, reject) => {
-      const unsubscribe = SerialService.onData((resp) => {
-        if (resp[1] !== command) return;
+      const unsubscribe = SerialService.onData(resp => {
+        if (hexToInt(resp[1]) !== command) return
 
-        const result = matcher(resp);
+        const result = matcher(resp)
 
         if (result !== null && result !== undefined) {
-          unsubscribe();
-          resolve(result);
+          unsubscribe()
+          resolve(result)
         }
-      });
+      })
 
       setTimeout(() => {
-        unsubscribe();
-        reject(
-          new Error(
-            `Timeout waiting for response to command 0x${command.toString(16)}`
-          )
-        );
-      }, timeout);
-    });
-  }
-
-  private static parseError(code: number): string {
-    switch (code) {
-      case 0x00:
-        return "Success";
-      case 0x01:
-        return "Overcurrent";
-      case 0x02:
-        return "Undercurrent";
-      case 0x03:
-        return "Timeout";
-      case 0x04:
-        return "Light screen failed";
-      case 0x05:
-        return "Electromagnet not open";
-      default:
-        return `Unknown error (0x${code.toString(16)})`;
-    }
+        unsubscribe()
+        reject(new Error(`Timeout waiting for response to command ${command}`))
+      }, timeout)
+    })
   }
 }
 
-export default VendingMachineAPI;
+export default VendingMachineAPI
