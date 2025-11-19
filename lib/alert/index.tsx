@@ -1,10 +1,6 @@
 import { Alert } from '@/components/alert'
 import { useCallback, useState } from 'react'
 
-interface AlertProviderProps {
-  children: React.ReactNode
-}
-
 type AlertOptions = {
   title?: string
   message?: string
@@ -20,7 +16,7 @@ type AlertOptions = {
 
 let alert: (options: AlertOptions) => void
 
-const AlertProvider = ({ children }: AlertProviderProps) => {
+const AlertProvider = () => {
   const [visible, setVisible] = useState(false)
   const [options, setOptions] = useState<AlertOptions | null>(null)
 
@@ -43,24 +39,20 @@ const AlertProvider = ({ children }: AlertProviderProps) => {
   }
 
   return (
-    <>
-      {children}
-
-      <Alert
-        visible={visible}
-        title={options?.title}
-        message={options?.message}
-        positiveText={options?.positiveText}
-        negativeText={options?.negativeText}
-        type={options?.type}
-        animationType={options?.animationType}
-        overlayClose={options?.overlayClose}
-        theme={options?.theme}
-        onPositivePress={handlePositive}
-        onNegativePress={handleNegative}
-      />
-    </>
+    <Alert
+      visible={visible}
+      title={options?.title}
+      message={options?.message}
+      positiveText={options?.positiveText}
+      negativeText={options?.negativeText}
+      type={options?.type}
+      animationType={options?.animationType}
+      overlayClose={options?.overlayClose}
+      theme={options?.theme}
+      onPositivePress={handlePositive}
+      onNegativePress={handleNegative}
+    />
   )
 }
 
-export { alert, AlertProvider, type AlertProviderProps }
+export { alert, AlertProvider }

@@ -4,6 +4,7 @@ import { useGetLocation } from '@/lib/hooks/use-get-location'
 import { useVendingMachine } from '@/entities/machines/use-vending-machine'
 import { StyleSheet, Text, View } from 'react-native'
 import QRCode from 'react-native-qrcode-svg'
+import { hideLoading, showLoading } from '@/lib/loader'
 
 interface MachineRegistrationProps {
   children?: React.ReactNode
@@ -14,15 +15,15 @@ const MachineRegistration = ({ children }: MachineRegistrationProps) => {
   const { serialNumber } = useVendingMachine()
   const machineQuery = useMachine(serialNumber)
 
-  if (!serialNumber) return null
+  const machine = machineQuery.data?.data.data
 
   if (machineQuery.isLoading || machineQuery.isFetching) {
-    return (
-      <View style={styles.container}>
-        <Text>Загрузка...</Text>
-      </View>
-    )
+    showLoading()
+  } else {
+    hideLoading()
   }
+
+  if (!serialNumber || !machine) return null
 
   if (machineQuery.isError) {
     const machineAddUrl = new URL(

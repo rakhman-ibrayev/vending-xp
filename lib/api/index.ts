@@ -10,7 +10,7 @@ import {
 } from './types'
 
 export const getMachine = () =>
-  api.get(`/vending-machines`) as Promise<ApiResponse<Machine[]>>
+  api.get(`/vending-machines`) as Promise<ApiResponse<Machine>>
 
 export const createOrder = (data: OrderCreateRequest) =>
   api.post(`/vending-machines/orders`, data) as Promise<ApiResponse<Order>>

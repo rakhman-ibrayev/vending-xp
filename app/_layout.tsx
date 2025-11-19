@@ -1,5 +1,11 @@
 import { StatusBar } from '@/components/status-bar'
+import { useMachine } from '@/entities/machines/use-machine'
+import { useRestockEvent } from '@/entities/machines/use-restock-event'
+import { useUpdateEvent } from '@/entities/machines/use-update-event'
+import { useVendingMachine } from '@/entities/machines/use-vending-machine'
 import { AlertProvider } from '@/lib/alert'
+import { LoadingProvider } from '@/lib/loader'
+import { useConnectSSE } from '@/lib/sse'
 import { NoInternet } from '@/modules/no-internet'
 import {
   onlineManager,
@@ -23,6 +29,32 @@ onlineManager.setEventListener(setOnline => {
 
 const queryClient = new QueryClient()
 
+function Routes() {
+  const { serialNumber } = useVendingMachine()
+  const machineQuery = useMachine(serialNumber)
+
+  useConnectSSE({
+    serialNumber: machineQuery.data?.data.data?.serial_number || ''
+  })
+  useUpdateEvent()
+  useRestockEvent()
+
+  return (
+    <>
+      <Stack>
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+
+        <Stack.Screen
+          name="orders/[orderId]"
+          options={{ headerShown: false, gestureEnabled: false }}
+        />
+
+        <Stack.Screen name="+not-found" />
+      </Stack>
+    </>
+  )
+}
+
 export default function RootLayout() {
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf')
@@ -36,26 +68,19 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <SafeAreaView style={styles.container}>
-        <AlertProvider>
-          <NoInternet>
-            <View style={styles.statusBar}>
-              <StatusBar />
-            </View>
+        <NoInternet>
+          <View style={styles.statusBar}>
+            <StatusBar />
+          </View>
 
-            <Stack>
-              <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Routes />
 
-              <Stack.Screen
-                name="orders/[orderId]"
-                options={{ headerShown: false, gestureEnabled: false }}
-              />
+          <ExpoStatusBar style="auto" />
+        </NoInternet>
 
-              <Stack.Screen name="+not-found" />
-            </Stack>
+        <AlertProvider />
 
-            <ExpoStatusBar style="auto" />
-          </NoInternet>
-        </AlertProvider>
+        <LoadingProvider />
       </SafeAreaView>
     </QueryClientProvider>
   )

@@ -10,6 +10,7 @@ import { StyleSheet, Text, View } from 'react-native'
 import { ItemSelectionHint } from '@/components/item-selection-hint'
 import { formatPrice } from '@/lib/helpers'
 import { Button } from '@/components/ui/button'
+import { hideLoading, showLoading } from '@/lib/loader'
 
 const ItemSelection = () => {
   const [numpadValue, setNumpadValue] = useState('')
@@ -17,6 +18,12 @@ const ItemSelection = () => {
   const { serialNumber } = useVendingMachine()
   const orderMutation = useAddMachineOrder()
   const productsQuery = useMachineProducts(serialNumber)
+
+  if (productsQuery.isLoading || productsQuery.isFetching) {
+    showLoading()
+  } else {
+    hideLoading()
+  }
 
   const products = productsQuery.data?.data.data || []
 

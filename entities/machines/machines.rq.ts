@@ -5,11 +5,11 @@ export const machinesQueries = {
 
   machine: () => ({
     queryKey: [...machinesQueries.all(), 'current'],
-    queryFn: () => getMachine()
+    queryFn: getMachine
   }),
 
   machineProducts: () => ({
     queryKey: [...machinesQueries.machine().queryKey, 'products'],
-    queryFn: () => getMachineProducts()
+    queryFn: getMachineProducts
   })
 }
