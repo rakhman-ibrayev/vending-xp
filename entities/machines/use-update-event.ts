@@ -8,6 +8,7 @@ export const useUpdateEvent = () => {
   useEventSSE({
     event: 'update',
     callback: () => {
+      console.info('[SSE] Update event received')
       queryClient.invalidateQueries({
         queryKey: machinesQueries.machine().queryKey,
         exact: true

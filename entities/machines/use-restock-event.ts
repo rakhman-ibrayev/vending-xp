@@ -8,6 +8,7 @@ export const useRestockEvent = () => {
   useEventSSE({
     event: 'restock',
     callback: () => {
+      console.info('[SSE] Restock event received')
       queryClient.invalidateQueries({
         queryKey: machinesQueries.machineProducts().queryKey,
         exact: true

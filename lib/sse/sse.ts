@@ -57,6 +57,7 @@ export const disconnectSSE = () => {
     eventSource.removeAllEventListeners()
     eventSource.close()
     eventSource = null
+    console.info('[SSE] Disconnected from server')
   }
   eventHandlers.clear()
 }
