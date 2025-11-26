@@ -2,6 +2,7 @@ import {
   ActivityIndicator,
   StyleSheet,
   Text,
+  TextStyle,
   TouchableOpacity,
   ViewStyle
 } from 'react-native'
@@ -11,6 +12,7 @@ interface ButtonProps {
   onPress: () => void
   disabled?: boolean
   style?: ViewStyle
+  textStyle?: TextStyle
   variant?: 'primary' | 'secondary'
   isLoading?: boolean
 }
@@ -20,6 +22,7 @@ const Button = ({
   onPress,
   disabled,
   style,
+  textStyle,
   variant = 'primary',
   isLoading = false
 }: ButtonProps) => {
@@ -34,8 +37,9 @@ const Button = ({
           backgroundColor: isSecondary
             ? '#fff'
             : disabled
-              ? '#a1a1a1'
-              : '#00aa6f'
+              ? '#029964'
+              : '#00aa6f',
+          opacity: disabled ? 0.7 : 1
         },
         style
       ]}
@@ -49,7 +53,9 @@ const Button = ({
           color={isSecondary ? '#e53935' : '#fff'}
         />
       ) : (
-        <Text style={[styles.text, isSecondary && styles.secondaryText]}>
+        <Text
+          style={[styles.text, textStyle, isSecondary && styles.secondaryText]}
+        >
           {children}
         </Text>
       )}

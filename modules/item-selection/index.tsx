@@ -11,6 +11,7 @@ import { ItemSelectionHint } from '@/components/item-selection-hint'
 import { formatPrice } from '@/lib/helpers'
 import { Button } from '@/components/ui/button'
 import { hideLoading, showLoading } from '@/lib/loader'
+import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 
 const ItemSelection = () => {
   const [numpadValue, setNumpadValue] = useState('')
@@ -28,7 +29,7 @@ const ItemSelection = () => {
   const products = productsQuery.data?.data.data || []
 
   const selectedProduct = numpadValue
-    ? products.find(product => product.slot_index.toString() === numpadValue)
+    ? products.find(product => product.slot_index === parseInt(numpadValue))
     : undefined
 
   const isSelectedProduct = typeof selectedProduct !== 'undefined'
@@ -78,9 +79,15 @@ const ItemSelection = () => {
 
     for (let i = 0; i < 3; i++) {
       boxes.push(
-        <View key={i} style={styles.charBox}>
-          <Text style={styles.charText}>{chars[i] || ' '}</Text>
-          <View style={styles.charUnderline} />
+        <View
+          key={i}
+          style={[styles.charBox, chars[i] && styles.charBoxActive]}
+        >
+          {chars[i] ? (
+            <Text style={styles.charText}>{chars[i]}</Text>
+          ) : (
+            <View style={styles.charUnderline} />
+          )}
         </View>
       )
     }
@@ -119,13 +126,17 @@ const ItemSelection = () => {
       <Numpad
         onNumberPress={handleNumberPress}
         onBackspacePress={handleBackspace}
+        onClearPress={handleResetNumpad}
       />
 
       <Button
         onPress={handlePayClick}
         disabled={!numpadValue || !isSelectedProduct}
         isLoading={orderMutation.isPending}
+        textStyle={styles.payButtonText}
+        style={styles.payButton}
       >
+        <MaterialIcons name="shopping-cart-checkout" size={18} color="#fff" />{' '}
         Оплатить
       </Button>
     </View>
@@ -149,17 +160,17 @@ const styles = StyleSheet.create({
   slotInfo: {
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 16,
+    gap: 24,
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    marginTop: 80
+    marginTop: 86
   },
   slotInfoTitle: {
     color: 'rgba(255, 255, 255, 0.9)',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
     letterSpacing: 2
@@ -167,12 +178,12 @@ const styles = StyleSheet.create({
   slotInfoInput: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: 12,
-    gap: 20
+    marginBottom: 4,
+    gap: 16
   },
   slotInfoPrice: {
     color: '#fff',
-    fontSize: 32,
+    fontSize: 38,
     fontWeight: '700',
     textAlign: 'center'
   },
@@ -182,19 +193,38 @@ const styles = StyleSheet.create({
   },
 
   charBox: {
-    alignItems: 'center'
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(87, 203, 96, 0.15)',
+    width: 86,
+    height: 100,
+    borderRadius: 18,
+    borderColor: 'rgba(87, 203, 96, 0.2)',
+    borderWidth: 4
+  },
+  charBoxActive: {
+    backgroundColor: '#00cf87'
   },
   charText: {
     color: '#fff',
-    fontSize: 56,
+    fontSize: 48,
     fontWeight: '700',
     textAlign: 'center'
   },
   charUnderline: {
-    width: 60,
-    height: 2,
-    backgroundColor: '#fff',
-    borderRadius: 2
+    width: 32,
+    height: 4,
+    backgroundColor: 'rgba(87, 203, 96, 0.2)'
+  },
+
+  payButton: {
+    height: 72,
+    borderRadius: 12
+  },
+  payButtonText: {
+    fontSize: 22,
+    fontWeight: '700',
+    letterSpacing: 1
   }
 })
 

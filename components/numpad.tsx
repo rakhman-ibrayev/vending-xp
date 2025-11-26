@@ -45,6 +45,7 @@ const NumpadButton = ({
 interface NumpadProps {
   onNumberPress: (digit: number) => void
   onBackspacePress: () => void
+  onClearPress: () => void
   disabled?: boolean
   buttonStyle?: ViewStyle
   buttonTextStyle?: TextStyle
@@ -54,12 +55,13 @@ interface NumpadProps {
 const Numpad = ({
   onNumberPress,
   onBackspacePress,
+  onClearPress,
   disabled = false,
   buttonStyle,
   buttonTextStyle,
   containerStyle
 }: NumpadProps) => {
-  const renderButton = (number: number, style?: ViewStyle) => (
+  const renderButton = (number: number) => (
     <NumpadButton
       key={number}
       text={number}
@@ -93,7 +95,12 @@ const Numpad = ({
 
       {/* Bottom row with 0 in center */}
       <View style={styles.row}>
-        <View style={styles.emptySpace} />
+        <NumpadButton
+          text="Очистить"
+          buttonStyle={styles.backSpace}
+          buttonTextStyle={styles.clearButtonText}
+          onPress={onClearPress}
+        />
 
         {renderButton(0)}
 
@@ -114,27 +121,30 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
-    gap: 12
+    marginBottom: 18,
+    gap: 18
   },
   button: {
     flex: 1,
     height: 100,
     backgroundColor: '#ffffff',
-    borderRadius: 12,
+    borderRadius: 16,
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#f4f4f4'
   },
   backSpace: {
-    backgroundColor: '#ffffff'
+    backgroundColor: '#f6f6f6'
+  },
+  clearButtonText: {
+    fontSize: 20,
+    color: '#9ca3af'
   },
   buttonText: {
     fontSize: 32,
     fontWeight: '600',
     color: '#1f2937'
-  },
-  emptySpace: {
-    flex: 1
   },
   disabled: {
     opacity: 0.5,
