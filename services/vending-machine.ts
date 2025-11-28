@@ -28,6 +28,7 @@ class VendingMachineAPI {
   private static restStartTime: number | null = null
   private static coolingInterval: number | null = null
   private static temperatureChangeCallbacks: ((temp: number) => void)[] = []
+  private static serialNumber: string | null = null
 
   /**
    * Initializes the vending machine connection.
@@ -234,11 +235,15 @@ class VendingMachineAPI {
    * @returns Promise resolving to serial number as a hex string
    */
   static async getSerialNumber(): Promise<string> {
+    if (this.serialNumber) {
+      return this.serialNumber
+    }
+
     const command = C.COMMANDS.READ_SERIAL
 
     await SerialService.sendCommand(command, buildCommandData([]))
 
-    return this.waitForResponse(command, response => {
+    this.serialNumber = await this.waitForResponse(command, response => {
       if (response.length < C.SIZES.RESPONSE_MIN_LENGTH) return null
 
       const serialBytes = response.slice(
@@ -248,6 +253,8 @@ class VendingMachineAPI {
 
       return serialBytes.map(byte => hexToInt(byte)).join('')
     })
+
+    return this.serialNumber
   }
 
   /**

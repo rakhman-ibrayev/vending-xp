@@ -1,4 +1,3 @@
-import { StatusBar } from '@/components/status-bar'
 import { useMachine } from '@/entities/machines/use-machine'
 import { useRestockEvent } from '@/entities/machines/use-restock-event'
 import { useUpdateEvent } from '@/entities/machines/use-update-event'
@@ -7,6 +6,7 @@ import { AlertProvider } from '@/lib/alert'
 import { LoadingProvider } from '@/lib/loader'
 import { useConnectSSE } from '@/lib/sse'
 import { NoInternet } from '@/modules/no-internet'
+import { StatusBar } from '@/modules/status-bar'
 import {
   onlineManager,
   QueryClient,
@@ -16,7 +16,7 @@ import { useFonts } from 'expo-font'
 import * as Network from 'expo-network'
 import { Stack } from 'expo-router'
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar'
-import { SafeAreaView, StyleSheet, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import 'react-native-reanimated'
 
 onlineManager.setEventListener(setOnline => {
@@ -30,8 +30,7 @@ onlineManager.setEventListener(setOnline => {
 const queryClient = new QueryClient()
 
 function Routes() {
-  const { serialNumber } = useVendingMachine()
-  const machineQuery = useMachine(serialNumber)
+  const machineQuery = useMachine()
 
   useConnectSSE({
     serialNumber: machineQuery.data?.data.data?.serial_number || ''
@@ -59,15 +58,13 @@ export default function RootLayout() {
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf')
   })
+  const { serialNumber } = useVendingMachine()
 
-  if (!loaded) {
-    // Async font loading only occurs in development.
-    return null
-  }
+  if (!loaded || !serialNumber) return null
 
   return (
     <QueryClientProvider client={queryClient}>
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <NoInternet>
           <View style={styles.statusBar}>
             <StatusBar />
@@ -77,11 +74,9 @@ export default function RootLayout() {
 
           <ExpoStatusBar style="auto" />
         </NoInternet>
-
         <AlertProvider />
-
         <LoadingProvider />
-      </SafeAreaView>
+      </View>
     </QueryClientProvider>
   )
 }
@@ -92,7 +87,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff'
   },
   statusBar: {
-    paddingInline: 32,
-    paddingTop: 40
+    paddingInline: 18,
+    paddingTop: 36
   }
 })

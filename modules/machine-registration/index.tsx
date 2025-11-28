@@ -13,9 +13,9 @@ interface MachineRegistrationProps {
 const MachineRegistration = ({ children }: MachineRegistrationProps) => {
   const { location } = useGetLocation()
   const { serialNumber } = useVendingMachine()
-  const machineQuery = useMachine(serialNumber)
+  const machineQuery = useMachine()
 
-  const machine = machineQuery.data?.data.data
+  if (!serialNumber) return null
 
   if (machineQuery.isLoading || machineQuery.isFetching) {
     showLoading()
@@ -23,11 +23,9 @@ const MachineRegistration = ({ children }: MachineRegistrationProps) => {
     hideLoading()
   }
 
-  if (!serialNumber || !machine) return null
-
   if (machineQuery.isError) {
     const machineAddUrl = new URL(
-      `${process.env.EXPO_PUBLIC_ADMIN_APP_URL}/machines?serial_number=${serialNumber}`
+      `${process.env.EXPO_PUBLIC_ADMIN_APP_URL}?serial_number=${serialNumber}`
     )
 
     if (location?.coords) {
