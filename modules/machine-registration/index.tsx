@@ -1,6 +1,5 @@
 import { Button } from '@/components/ui/button'
 import { useMachine } from '@/entities/machines/use-machine'
-import { useGetLocation } from '@/lib/hooks/use-get-location'
 import { useVendingMachine } from '@/entities/machines/use-vending-machine'
 import { StyleSheet, Text, View } from 'react-native'
 import QRCode from 'react-native-qrcode-svg'
@@ -11,7 +10,6 @@ interface MachineRegistrationProps {
 }
 
 const MachineRegistration = ({ children }: MachineRegistrationProps) => {
-  const { location } = useGetLocation()
   const { serialNumber } = useVendingMachine()
   const machineQuery = useMachine()
 
@@ -27,18 +25,6 @@ const MachineRegistration = ({ children }: MachineRegistrationProps) => {
     const machineAddUrl = new URL(
       `${process.env.EXPO_PUBLIC_ADMIN_APP_URL}?serial_number=${serialNumber}`
     )
-
-    if (location?.coords) {
-      machineAddUrl.searchParams.set(
-        'latitude',
-        location.coords.latitude.toString()
-      )
-
-      machineAddUrl.searchParams.set(
-        'longitude',
-        location.coords.longitude.toString()
-      )
-    }
 
     return (
       <View style={styles.container}>
@@ -57,20 +43,6 @@ const MachineRegistration = ({ children }: MachineRegistrationProps) => {
               <Text style={styles.label}>Серийный номер:</Text>
               <Text style={styles.value}>{serialNumber || '—'}</Text>
             </View>
-
-            {location?.coords && (
-              <>
-                <View style={styles.infoRow}>
-                  <Text style={styles.label}>Широта:</Text>
-                  <Text style={styles.value}>{location.coords.latitude}</Text>
-                </View>
-
-                <View style={styles.infoRow}>
-                  <Text style={styles.label}>Долгота:</Text>
-                  <Text style={styles.value}>{location.coords.longitude}</Text>
-                </View>
-              </>
-            )}
           </View>
 
           <Button
