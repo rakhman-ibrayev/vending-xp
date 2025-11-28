@@ -9,7 +9,7 @@ const PageContainer = ({ style, ...rest }: PageContainerProps) => {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 32,
+    padding: 18,
     flex: 1,
     gap: 24,
     backgroundColor: '#ffffff'

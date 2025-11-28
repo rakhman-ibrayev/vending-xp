@@ -3,9 +3,10 @@
 import { useNetworkState } from 'expo-network'
 import type React from 'react'
 import { useEffect, useState } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import VendingMachineAPI from '../services/vending-machine'
+import { ExitModal } from '@/components/exit-modal'
 
 const formatDateTime = (date: Date, dateFormat: string) => {
   return date.toLocaleString(dateFormat, {
@@ -38,6 +39,9 @@ const StatusBar = ({
   const { isConnected } = useNetworkState()
   const [currentTime, setCurrentTime] = useState(new Date())
   const [temperature, setTemperature] = useState<number | null>(null)
+  const [isExitModalOpen, setIsExitModalOpen] = useState(false)
+
+  const toggleExitModal = () => setIsExitModalOpen(prev => !prev)
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -71,7 +75,10 @@ const StatusBar = ({
       ]}
     >
       {showWifi && (
-        <View style={styles.wifiContainer}>
+        <TouchableOpacity
+          style={styles.wifiContainer}
+          onPress={toggleExitModal}
+        >
           {isConnected && (
             <MaterialIcons name="wifi" size={18} weight="medium" color="#000" />
           )}
@@ -79,7 +86,7 @@ const StatusBar = ({
           <Text style={[styles.wifiText, { color: textColor }]}>
             {isConnected ? 'Подключено' : 'Нет соединения'}
           </Text>
-        </View>
+        </TouchableOpacity>
       )}
 
       <View style={styles.rightContainer}>
@@ -97,6 +104,8 @@ const StatusBar = ({
           </View>
         )}
       </View>
+
+      <ExitModal onClose={toggleExitModal} isOpen={isExitModalOpen} />
     </View>
   )
 }

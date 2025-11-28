@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   BackHandler,
   Modal,
@@ -9,6 +9,7 @@ import {
   View
 } from 'react-native'
 import { Button } from './ui/button'
+import { useMachine } from '@/entities/machines/use-machine'
 
 interface ExitModalProps {
   onClose: () => void
@@ -16,16 +17,26 @@ interface ExitModalProps {
 }
 
 const ExitModal = ({ onClose, isOpen }: ExitModalProps) => {
+  const machineQuery = useMachine()
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
 
   const handleExit = () => {
-    if (password === process.env.EXPO_PUBLIC_TECHNICIAN_CODE) {
+    if (
+      password === machineQuery.data?.data.data?.technician_password ||
+      password === process.env.EXPO_PUBLIC_TECHNICIAN_CODE
+    ) {
       BackHandler.exitApp()
+      onClose()
     } else {
       setError('Неверный пароль')
     }
   }
+
+  useEffect(() => {
+    setPassword('')
+    setError('')
+  }, [isOpen])
 
   return (
     <Modal animationType="fade" visible={isOpen} transparent>
