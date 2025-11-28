@@ -35,3 +35,7 @@ export const failOrder = (orderId: number) =>
     ApiResponse<OrderWithStatus>
   >
 
+export const updateTelemetry = (data: { temperature: number }) =>
+  api.post(`/vending-machines/telemetry`, data) as Promise<
+    ApiResponse<{ id: number }>
+  >

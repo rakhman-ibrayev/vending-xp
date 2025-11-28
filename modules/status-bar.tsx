@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import VendingMachineAPI from '../services/vending-machine'
+import { useUpdateTelemetry } from '@/entities/machines/use-update-telemetry'
 import { ExitModal } from '@/components/exit-modal'
 
 const formatDateTime = (date: Date, dateFormat: string) => {
@@ -40,6 +41,7 @@ const StatusBar = ({
   const [currentTime, setCurrentTime] = useState(new Date())
   const [temperature, setTemperature] = useState<number | null>(null)
   const [isExitModalOpen, setIsExitModalOpen] = useState(false)
+  const telemetryMutation = useUpdateTelemetry()
 
   const toggleExitModal = () => setIsExitModalOpen(prev => !prev)
 
@@ -54,6 +56,7 @@ const StatusBar = ({
   useEffect(() => {
     const handleTemperatureChange = (temp: number) => {
       setTemperature(temp)
+      telemetryMutation.mutate({ temperature: temp })
     }
 
     VendingMachineAPI.onTemperatureChange(handleTemperatureChange)
@@ -61,7 +64,7 @@ const StatusBar = ({
     return () => {
       VendingMachineAPI.offTemperatureChange(handleTemperatureChange)
     }
-  }, [])
+  }, [telemetryMutation])
 
   return (
     <View
