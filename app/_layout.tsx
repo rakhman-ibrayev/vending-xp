@@ -7,6 +7,7 @@ import { LoadingProvider } from '@/lib/loader'
 import { useConnectSSE } from '@/lib/sse'
 import { NoInternet } from '@/modules/no-internet'
 import { StatusBar } from '@/modules/status-bar'
+import { SupportContacts } from '@/modules/support-contacts'
 import {
   onlineManager,
   QueryClient,
@@ -71,6 +72,8 @@ export default function RootLayout() {
           </View>
 
           <Routes />
+
+          <SupportContacts />
 
           <ExpoStatusBar style="auto" />
         </NoInternet>

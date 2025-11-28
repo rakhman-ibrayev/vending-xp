@@ -19,6 +19,7 @@ export interface Machine {
   longitude: number | null
   technician_password: string | null
   created_at: string
+  support_contacts: string | null
 }
 
 export interface MachineProduct {
