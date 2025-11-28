@@ -41,6 +41,12 @@
         "projectId": "4724abbe-9ced-41cd-9b43-51e1634c8703"
       }
     },
-    "owner": "rakhmanxibrayev"
+    "owner": "rakhmanxibrayev",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/4724abbe-9ced-41cd-9b43-51e1634c8703"
+    }
   }
 }
