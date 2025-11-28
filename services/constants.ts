@@ -16,6 +16,44 @@ export const COMMANDS = {
   WRITE_DO: 0x08
 } as const
 
+export const REQUEST_INDICES = {
+  Y1: 2,
+  Y2: 3,
+  Y3: 4,
+  Y4: 5,
+  Y5: 6,
+  Y6: 7,
+  Y7: 8,
+  Y8: 9,
+  Y9: 10,
+  Y10: 11,
+  Y11: 12,
+  Y12: 13,
+  Y13: 14,
+  Y14: 15,
+  Y15: 16,
+  Y16: 17
+} as const
+
+export const RESPONSE_INDICES = {
+  Z1: 2,
+  Z2: 3,
+  Z3: 4,
+  Z4: 5,
+  Z5: 6,
+  Z6: 7,
+  Z7: 8,
+  Z8: 9,
+  Z9: 10,
+  Z10: 11,
+  Z11: 12,
+  Z12: 13,
+  Z13: 14,
+  Z14: 15,
+  Z15: 16,
+  Z16: 17
+} as const
+
 // Motors
 export const MOTOR_DEFAULTS = {
   MOTOR_TYPE: 10,
@@ -60,13 +98,15 @@ export const SIZES = {
 
 // Serial number bytes
 export const SERIAL = {
-  START_INDEX: 2, // Z1
-  END_INDEX: 13 // Z12
+  START_INDEX: RESPONSE_INDICES.Z1,
+  END_INDEX: RESPONSE_INDICES.Z12
 } as const
 
 // Timeout
 export const TIMEOUT = {
-  DEFAULT_MS: 1000
+  DEFAULT_MS: 1000,
+  COMMAND_INTERVAL_MS: 50,
+  MOTOR_TIMEOUT_MS: 7000
 } as const
 
 // Cooling system

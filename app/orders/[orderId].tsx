@@ -7,31 +7,30 @@ import { alert } from '@/lib/alert'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
-import {
-  Animated,
-  StyleSheet,
-  Text,
-  View,
-  TouchableOpacity
-} from 'react-native'
+import { StyleSheet, Text, View, TouchableOpacity } from 'react-native'
 import QRCode from 'react-native-qrcode-svg'
 import VendingMachineAPI from '@/services/vending-machine'
+import { hideLoading, showLoading } from '@/lib/loader'
+import { useFailOrder } from '@/entities/orders/use-fail-order'
 
 const PAYMENT_TIMEOUT_MS = 60000 // 1 minute
+const REFETCH_INTERVAL_MS = 3000 // 3 seconds
 const WARNING_TIMEOUT_S = 30 // 30 seconds
 
 const Order = () => {
   const orderId = Number(useLocalSearchParams().orderId)
 
-  const orderQuery = useOrder(orderId, 3000)
+  const [refetchInterval, setRefetchInterval] = useState<number | false>(
+    REFETCH_INTERVAL_MS
+  )
+  const orderQuery = useOrder(orderId, refetchInterval)
   const cancelMutation = useCancelOrder()
+  const failMutation = useFailOrder()
 
   const [vendStatus, setVendStatus] = useState<
     'idle' | 'pending' | 'success' | 'error'
   >('idle')
-  const [vendError, setVendError] = useState<string | null>(null)
   const [showConfirmation, setShowConfirmation] = useState(false)
-  const confirmationOpacity = useRef(new Animated.Value(0)).current
 
   const [showWarning, setShowWarning] = useState(false)
   const warningTimerRef = useRef<number | null>(null)
@@ -99,32 +98,24 @@ const Order = () => {
 
       setShowWarning(false)
       setVendStatus('pending')
-      setVendError(null)
+      showLoading()
 
-      VendingMachineAPI.vendProduct(order.slot_index - 1)
-        .then(result => {
-          if (result.success) {
-            setVendStatus('success')
-            setShowConfirmation(true)
+      VendingMachineAPI.vendProduct(order.slot_index - 1).then(result => {
+        hideLoading()
+        setRefetchInterval(false)
 
-            Animated.timing(confirmationOpacity, {
-              toValue: 1,
-              duration: 400,
-              useNativeDriver: true
-            }).start()
-
-            timeout = setTimeout(() => {
-              router.replace('/')
-            }, 2500)
-          } else {
-            setVendStatus('error')
-            setVendError('Не удалось выдать товар.')
-          }
-        })
-        .catch(() => {
+        if (result.success) {
+          setVendStatus('success')
+          setShowConfirmation(true)
+        } else {
           setVendStatus('error')
-          setVendError('Не удалось выдать товар.')
-        })
+          failMutation.mutate(orderId)
+        }
+
+        timeout = setTimeout(() => {
+          router.replace('/')
+        }, 5000)
+      })
     }
 
     return () => {
@@ -139,9 +130,7 @@ const Order = () => {
     <PageContainer style={styles.container}>
       <View style={styles.card}>
         {showConfirmation && (
-          <Animated.View
-            style={[styles.confirmation, { opacity: confirmationOpacity }]}
-          >
+          <View style={styles.confirmation}>
             <MaterialIcons
               name="check-circle-outline"
               color="#06db06ff"
@@ -153,10 +142,18 @@ const Order = () => {
             <Text style={styles.confirmationHint}>
               Заберите ваш товар из автомата
             </Text>
-          </Animated.View>
+          </View>
         )}
 
-        {!showConfirmation && (
+        {!showConfirmation && vendStatus === 'error' && (
+          <View style={styles.confirmation}>
+            <MaterialIcons name="error-outline" color="#e53935" size={200} />
+
+            <Text style={styles.confirmationText}>Ошибка выдачи товара</Text>
+          </View>
+        )}
+
+        {!showConfirmation && vendStatus !== 'error' && (
           <>
             <Text style={styles.title}>Оплата заказа</Text>
 
@@ -213,14 +210,6 @@ const Order = () => {
                 <Text style={styles.value}>{order.slot_index}</Text>
               </View>
             </View>
-
-            {vendStatus === 'pending' && (
-              <Text style={styles.pending}>Выдача товара...</Text>
-            )}
-
-            {vendStatus === 'error' && (
-              <Text style={styles.error}>{vendError}</Text>
-            )}
 
             <Button
               variant="secondary"
@@ -367,15 +356,15 @@ const styles = StyleSheet.create({
     gap: 12
   },
   confirmationIcon: {
-    fontSize: 56
+    fontSize: 64
   },
   confirmationText: {
-    fontSize: 22,
+    fontSize: 32,
     fontWeight: 'bold',
     textAlign: 'center'
   },
   confirmationHint: {
-    fontSize: 16,
+    fontSize: 20,
     color: '#444',
     textAlign: 'center'
   }

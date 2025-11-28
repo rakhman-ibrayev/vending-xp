@@ -29,3 +29,9 @@ export const cancelOrder = (orderId: number) =>
   api.patch(`/vending-machines/orders/${orderId}/cancel`) as Promise<
     ApiResponse<OrderWithStatus>
   >
+
+export const failOrder = (orderId: number) =>
+  api.patch(`/vending-machines/orders/${orderId}/failed`) as Promise<
+    ApiResponse<OrderWithStatus>
+  >
+

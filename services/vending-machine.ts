@@ -3,7 +3,6 @@ import * as C from './constants'
 import {
   hexToInt,
   parseDOStatus,
-  parseMotorRunResult,
   parseMotorStatus,
   buildCommandData
 } from './utils'
@@ -265,8 +264,11 @@ class VendingMachineAPI {
       delay?: number
       timeout?: number
     } = {}
-  ) {
+  ): Promise<{ success: boolean }> {
     const command = C.COMMANDS.MOTOR_RUN
+    const maxWaitMs = options.timeout
+      ? options.timeout / 10
+      : C.TIMEOUT.MOTOR_TIMEOUT_MS
 
     await SerialService.sendCommand(
       command,
@@ -281,17 +283,30 @@ class VendingMachineAPI {
       ])
     )
 
-    return this.waitForResponse(command, response => {
-      const motorRunResult = hexToInt(response[2])
+    return await new Promise(resolve => {
+      const intervalId = setInterval(async () => {
+        const { raw } = await this.getMotorStatus()
+        const z3 = hexToInt(raw[C.RESPONSE_INDICES.Z3])
+        const z10 = hexToInt(raw[C.RESPONSE_INDICES.Z10])
 
-      if (motorRunResult === C.MOTOR_RUN_RESULTS.SUCCESS)
-        return { success: true, motorRunResult }
+        if (z3 === 0 && z10 > 0) {
+          clearInterval(intervalId)
+          resolve({ success: true })
+          return
+        }
 
-      return {
-        success: false,
-        motorRunResult,
-        error: parseMotorRunResult(motorRunResult)
-      }
+        if (z3 !== 0) {
+          clearInterval(intervalId)
+          resolve({ success: false })
+          return
+        }
+      }, C.TIMEOUT.DEFAULT_MS)
+
+      // overall timeout to stop polling
+      setTimeout(() => {
+        clearInterval(intervalId)
+        resolve({ success: false })
+      }, maxWaitMs)
     })
   }
 
@@ -299,7 +314,10 @@ class VendingMachineAPI {
    * Retrieves the current motor status.
    * @returns Promise resolving to human-readable status string
    */
-  static async getMotorStatus(): Promise<string> {
+  static async getMotorStatus(): Promise<{
+    raw: string[]
+    status: string
+  }> {
     const command = C.COMMANDS.READ_MOTOR_STATUS
 
     await SerialService.sendCommand(command, buildCommandData([]))
@@ -307,7 +325,10 @@ class VendingMachineAPI {
     return this.waitForResponse(command, response => {
       if (response.length < C.SIZES.RESPONSE_MIN_LENGTH) return null
 
-      return parseMotorStatus(hexToInt(response[4]))
+      return {
+        raw: response,
+        status: parseMotorStatus(hexToInt(response[C.RESPONSE_INDICES.Z3]))
+      }
     })
   }
 

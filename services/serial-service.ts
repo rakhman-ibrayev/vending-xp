@@ -1,7 +1,7 @@
 import SerialPortAPI, { type SerialPort } from 'react-native-serial-port-api'
 import crc16modbus from './crc16modbus'
 import MockSerialService from './mock-serial-service'
-import { SIZES } from './constants'
+import { SIZES, TIMEOUT } from './constants'
 
 /**
  * Settings for establishing a serial connection to the vending machine.
@@ -52,10 +52,9 @@ class SerialService {
       this.serialPort = serialPort
 
       this.serialPort.onReceived(buff => {
-        // most likely we are not converting this correctly
         const bytes = this.hexToByteArray(buff.toString('hex'))
 
-        console.log(
+        console.info(
           'onData(): received buffer -',
           buff,
           'transformed to bytes -',
@@ -81,10 +80,14 @@ class SerialService {
   async sendCommand(command: number, data: number[]): Promise<boolean> {
     if (!this.serialPort) throw new Error('Device not connected')
 
+    await new Promise(resolve =>
+      setTimeout(resolve, TIMEOUT.COMMAND_INTERVAL_MS)
+    )
+
     const frame = this.buildFrame(command, data)
     const commandHex = this.toHexString(frame)
 
-    console.log(
+    console.info(
       'sendCommand(): command -',
       command,
       'and data -',
