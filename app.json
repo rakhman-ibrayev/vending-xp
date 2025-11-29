@@ -4,6 +4,7 @@
     "slug": "vending",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
     "scheme": "vending",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -12,6 +13,7 @@
     },
     "android": {
       "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
@@ -19,6 +21,7 @@
     },
     "web": {
       "bundler": "metro",
+      "favicon": "./assets/images/icon.png",
       "output": "static"
     },
     "plugins": [
@@ -26,6 +29,7 @@
       [
         "expo-splash-screen",
         {
+          "image": "./assets/images/icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
