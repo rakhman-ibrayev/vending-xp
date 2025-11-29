@@ -66,17 +66,17 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <View style={styles.container}>
+        <View style={styles.statusBar}>
+          <StatusBar />
+        </View>
+
         <NoInternet>
-          <View style={styles.statusBar}>
-            <StatusBar />
-          </View>
-
           <Routes />
-
-          <SupportContacts />
-
-          <ExpoStatusBar style="auto" />
         </NoInternet>
+
+        <SupportContacts />
+
+        <ExpoStatusBar style="auto" />
         <AlertProvider />
         <LoadingProvider />
       </View>
