@@ -10,7 +10,10 @@
     "lint": "expo lint",
     "build:dev": "npx eas build --platform android --profile development",
     "build:preview": "npx eas build --platform android --profile preview",
-    "build:prod": "npx eas build --platform android --profile production"
+    "build:prod": "npx eas build --platform android --profile production",
+    "update:dev": "npx eas update --platform android --environment development --channel development",
+    "update:preview": "npx eas update --platform android --environment preview --channel preview",
+    "update:prod": "npx eas update --platform android --environment production --channel production"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

@@ -5,6 +5,7 @@ import { useVendingMachine } from '@/entities/machines/use-vending-machine'
 import { AlertProvider } from '@/lib/alert'
 import { LoadingProvider } from '@/lib/loader'
 import { useConnectSSE } from '@/lib/sse'
+import { withVersionUpdateCheck } from '@/lib/version-updates/with-version-update-check'
 import { NoInternet } from '@/modules/no-internet'
 import { StatusBar } from '@/modules/status-bar'
 import { SupportContacts } from '@/modules/support-contacts'
@@ -55,7 +56,7 @@ function Routes() {
   )
 }
 
-export default function RootLayout() {
+const RootLayout = withVersionUpdateCheck(() => {
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf')
   })
@@ -82,7 +83,9 @@ export default function RootLayout() {
       </View>
     </QueryClientProvider>
   )
-}
+})
+
+export default RootLayout
 
 const styles = StyleSheet.create({
   container: {

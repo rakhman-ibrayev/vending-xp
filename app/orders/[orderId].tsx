@@ -12,6 +12,10 @@ import QRCode from 'react-native-qrcode-svg'
 import VendingMachineAPI from '@/services/vending-machine'
 import { hideLoading, showLoading } from '@/lib/loader'
 import { useFailOrder } from '@/entities/orders/use-fail-order'
+import {
+  disableVersionUpdates,
+  enableVersionUpdates
+} from '@/lib/version-updates/use-update-version'
 
 const PAYMENT_TIMEOUT_MS = 60000 // 1 minute
 const REFETCH_INTERVAL_MS = 3000 // 3 seconds
@@ -75,6 +79,9 @@ const Order = () => {
 
   // Payment timeout logic
   useEffect(() => {
+    // Prevent app version updates during payment process
+    disableVersionUpdates()
+
     // After 1 minute, show warning countdown
     warningTimerRef.current = setTimeout(() => {
       setShowWarning(true)
@@ -82,6 +89,7 @@ const Order = () => {
 
     return () => {
       if (warningTimerRef.current) clearTimeout(warningTimerRef.current)
+      enableVersionUpdates()
     }
   }, [])
 
