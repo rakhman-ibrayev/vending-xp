@@ -16,9 +16,9 @@ const MachineRegistration = ({ children }: MachineRegistrationProps) => {
   if (!serialNumber) return null
 
   if (machineQuery.isLoading || machineQuery.isFetching) {
-    showLoading()
+    showLoading?.()
   } else {
-    hideLoading()
+    hideLoading?.()
   }
 
   if (machineQuery.isError) {

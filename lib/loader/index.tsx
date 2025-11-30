@@ -1,9 +1,9 @@
 import { Loading } from '@/components/loading'
 import { useCallback, useState } from 'react'
 
-let showLoading: () => void
+let showLoading: (() => void) | undefined
 
-let hideLoading: () => void
+let hideLoading: (() => void) | undefined
 
 const LoadingProvider = () => {
   const [visible, setVisible] = useState(false)

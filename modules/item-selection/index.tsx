@@ -21,9 +21,9 @@ const ItemSelection = () => {
   const productsQuery = useMachineProducts(serialNumber)
 
   if (productsQuery.isLoading || productsQuery.isFetching) {
-    showLoading()
+    showLoading?.()
   } else {
-    hideLoading()
+    hideLoading?.()
   }
 
   const products = productsQuery.data?.data.data || []

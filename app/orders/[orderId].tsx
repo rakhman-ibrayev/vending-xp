@@ -98,10 +98,10 @@ const Order = () => {
 
       setShowWarning(false)
       setVendStatus('pending')
-      showLoading()
+      showLoading?.()
 
       VendingMachineAPI.vendProduct(order.slot_index - 1).then(result => {
-        hideLoading()
+        hideLoading?.()
         setRefetchInterval(false)
 
         if (result.success) {
