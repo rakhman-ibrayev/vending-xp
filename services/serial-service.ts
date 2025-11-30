@@ -55,7 +55,7 @@ class SerialService {
         const bytes = this.hexToByteArray(buff.toString('hex'))
 
         console.info(
-          'onData(): received buffer -',
+          '[SerialService.onReceived] Received buffer -',
           buff,
           'transformed to bytes -',
           bytes
@@ -66,7 +66,7 @@ class SerialService {
 
       return true
     } catch (error) {
-      console.error('Connection failed:', error)
+      console.error('[SerialService.connect] Connection failed:', error)
       return false
     }
   }
@@ -88,7 +88,7 @@ class SerialService {
     const commandHex = this.toHexString(frame)
 
     console.info(
-      'sendCommand(): command -',
+      '[SerialService.sendCommand] Command -',
       command,
       'and data -',
       data,

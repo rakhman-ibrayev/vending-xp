@@ -119,7 +119,7 @@ class VendingMachineAPI {
       try {
         callback(temp)
       } catch (error) {
-        console.error('Error in temperature change callback:', error)
+        console.error('[VendingMachineAPI.emitTemperatureChange] Error', error)
       }
     })
   }
