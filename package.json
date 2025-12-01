@@ -5,8 +5,6 @@
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web",
     "lint": "expo lint",
     "build:dev": "npx eas build --platform android --profile development",
     "build:preview": "npx eas build --platform android --profile preview",
@@ -61,6 +59,7 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
     "prettier": "^3.6.2",
+    "tsx": "^4.20.6",
     "typescript": "~5.9.2"
   },
   "private": true

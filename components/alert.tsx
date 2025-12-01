@@ -3,7 +3,6 @@ import {
   Animated,
   Easing,
   Modal,
-  Platform,
   StyleProp,
   StyleSheet,
   Text,
@@ -278,17 +277,7 @@ const styles = StyleSheet.create({
     maxWidth: 400,
     borderRadius: 16,
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8
-      },
-      android: {
-        elevation: 8
-      }
-    })
+    elevation: 8
   },
   containerLight: { backgroundColor: '#FFFFFF' },
   containerDark: { backgroundColor: '#2C2C2C' },
