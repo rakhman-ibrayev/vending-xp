@@ -21,7 +21,12 @@ const withBootReceiverManifest: ConfigPlugin = config =>
     const permissions = [
       'android.permission.RECEIVE_BOOT_COMPLETED',
       'android.permission.SYSTEM_ALERT_WINDOW',
-      'android.permission.WAKE_LOCK'
+      'android.permission.WAKE_LOCK',
+      'android.permission.RECORD_AUDIO',
+      'android.permission.READ_PHONE_STATE',
+      'android.permission.CHANGE_NETWORK_STATE',
+      'android.permission.ACCESS_FINE_LOCATION',
+      'android.permission.ACCESS_COARSE_LOCATION'
     ]
 
     permissions.forEach(permission => {
@@ -68,6 +73,19 @@ const withBootReceiverManifest: ConfigPlugin = config =>
           }
         ]
       })
+    }
+
+    // ----- Configure MainActivity soft input mode -----
+    app.activity = app.activity ?? []
+    const mainActivity = app.activity.find(
+      (a: any) => a.$['android:name'] === '.MainActivity'
+    )
+
+    if (mainActivity && mainActivity.$) {
+      // Ensure keyboard shows properly for text inputs
+      mainActivity.$['android:windowSoftInputMode'] = 'adjustResize'
+      // Keep screen on for vending machine tablet
+      mainActivity.$['android:keepScreenOn'] = 'true'
     }
 
     return config
