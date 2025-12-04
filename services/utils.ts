@@ -2,6 +2,11 @@ import { MOTOR_STATUSES, MOTOR_RUN_RESULTS, DO, SIZES } from './constants'
 
 export const hexToInt = (hex: string): number => parseInt(hex, 16)
 
+export const hexToShort = (hex: string): number => {
+  const int = parseInt(hex, 16)
+  return (int << 16) >> 16
+}
+
 export const parseMotorStatus = (code: number): string => {
   switch (code) {
     case MOTOR_STATUSES.SUCCESS:

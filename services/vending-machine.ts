@@ -4,7 +4,8 @@ import {
   hexToInt,
   parseDOStatus,
   parseMotorStatus,
-  buildCommandData
+  buildCommandData,
+  hexToShort
 } from './utils'
 
 export interface InitializationSettings {
@@ -226,7 +227,7 @@ class VendingMachineAPI {
     return this.waitForResponse(command, response => {
       if (response.length < C.SIZES.RESPONSE_MIN_LENGTH) return null
 
-      return (hexToInt(`${response[2]}${response[3]}`) - 20) / 10
+      return (hexToShort(`${response[2]}${response[3]}`) - 20) / 10
     })
   }
 
