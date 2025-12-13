@@ -5,10 +5,10 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View
 } from 'react-native'
 import { Button } from './ui/button'
+import { Numpad } from './numpad'
 import { useMachine } from '@/entities/machines/use-machine'
 
 interface ExitModalProps {
@@ -18,13 +18,26 @@ interface ExitModalProps {
 
 const ExitModal = ({ onClose, isOpen }: ExitModalProps) => {
   const machineQuery = useMachine()
-  const [password, setPassword] = useState('')
+  const [code, setCode] = useState('')
   const [error, setError] = useState('')
+
+  const handleNumberPress = (digit: number) => {
+    setCode(prev => prev + digit.toString())
+    setError('')
+  }
+
+  const handleBackspace = () => {
+    setCode(prev => prev.slice(0, -1))
+  }
+
+  const handleClear = () => {
+    setCode('')
+  }
 
   const handleExit = () => {
     if (
-      password === machineQuery.data?.data.data?.technician_password ||
-      password === process.env.EXPO_PUBLIC_TECHNICIAN_CODE
+      code === machineQuery.data?.data.data?.technician_password ||
+      code === process.env.EXPO_PUBLIC_TECHNICIAN_CODE
     ) {
       BackHandler.exitApp()
       onClose()
@@ -34,7 +47,7 @@ const ExitModal = ({ onClose, isOpen }: ExitModalProps) => {
   }
 
   useEffect(() => {
-    setPassword('')
+    setCode('')
     setError('')
   }, [isOpen])
 
@@ -42,22 +55,25 @@ const ExitModal = ({ onClose, isOpen }: ExitModalProps) => {
     <Modal animationType="fade" visible={isOpen} transparent>
       <Pressable onPress={onClose} style={styles.overlay} />
 
-      <View style={styles.centeredView}>
+      <View style={styles.modalContainer}>
         <View style={styles.modalContent}>
           <Text style={styles.title}>Вы уверены, что хотите выйти?</Text>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Пароль техника"
-            secureTextEntry
-            value={password}
-            onChangeText={text => {
-              setPassword(text)
-              setError('')
-            }}
-          />
+          <View
+            style={[
+              styles.passwordDisplay,
+              error && styles.passwordDisplayError
+            ]}
+          >
+            <Text style={styles.passwordText}>{'*'.repeat(code.length)}</Text>
+          </View>
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          <Numpad
+            onNumberPress={handleNumberPress}
+            onBackspacePress={handleBackspace}
+            onClearPress={handleClear}
+            containerStyle={styles.numpad}
+          />
 
           <View style={styles.buttonRow}>
             <Button variant="secondary" onPress={onClose} style={{ flex: 1 }}>
@@ -79,41 +95,47 @@ const styles = StyleSheet.create({
     height: '100%',
     width: '100%',
     backgroundColor: '#000',
-    opacity: 0.3,
+    opacity: 0.5,
     position: 'absolute',
     top: 0,
     left: 0
   },
-  centeredView: {
+  modalContainer: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
     alignItems: 'center'
   },
   modalContent: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 24,
-    elevation: 5,
-    margin: 20,
-    gap: 20
+    borderRadius: 24,
+    padding: 36,
+    gap: 20,
+    width: '100%'
   },
   title: {
     fontSize: 20
   },
-  input: {
+  passwordDisplay: {
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 8,
     padding: 12,
-    fontSize: 20
+    minHeight: 50,
+    justifyContent: 'center'
   },
-  error: {
-    color: '#e53935',
-    marginBottom: 8
+  passwordDisplayError: {
+    borderColor: '#e53935'
+  },
+  passwordText: {
+    fontSize: 20,
+    textAlign: 'center'
+  },
+  numpad: {
+    marginTop: 20
   },
   buttonRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 16,
     width: '100%',
     marginTop: 8
   }
