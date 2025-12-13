@@ -111,10 +111,9 @@ export const TIMEOUT = {
 
 // Cooling system
 export enum CoolingState {
-  IDLE,
+  IDLE, // Both off, waiting for temperature to exceed target + recovery offset
   STARTING_COOLING, // Fan on, waiting 5 minutes before compressor
   COOLING, // Both fan and compressor on
-  COOLED, // Both off, waiting for temperature recovery
   COMPRESSOR_REST // Compressor off for rest, fan on
 }
 
@@ -123,5 +122,5 @@ export const COOLING = {
   TEMPERATURE_CHECK_INTERVAL: 60 * 1000, // 1 minute in milliseconds
   FAN_START_DELAY: 5 * 60 * 1000, // 5 minutes in milliseconds
   COMPRESSOR_MAX_RUNTIME: 3 * 60 * 60 * 1000, // 3 hours in milliseconds
-  COMPRESSOR_REST_DURATION: 15 * 60 * 1000 // 15 minutes in milliseconds
+  COMPRESSOR_REST_DURATION: 20 * 60 * 1000 // 20 minutes in milliseconds (manufacturer specifies "After 20 minutes")
 } as const

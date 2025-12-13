@@ -1,4 +1,10 @@
-import { MOTOR_STATUSES, MOTOR_RUN_RESULTS, DO, SIZES } from './constants'
+import {
+  MOTOR_STATUSES,
+  MOTOR_RUN_RESULTS,
+  DO,
+  SIZES,
+  RESPONSE_INDICES
+} from './constants'
 
 export const hexToInt = (hex: string): number => parseInt(hex, 16)
 
@@ -48,8 +54,8 @@ export const parseDOStatus = (
   expectedIndex: number,
   on: boolean
 ): boolean =>
-  hexToInt(response[2]) === expectedIndex &&
-  hexToInt(response[3]) === (on ? DO.ON : DO.OFF)
+  hexToInt(response[RESPONSE_INDICES.Z1]) === expectedIndex &&
+  hexToInt(response[RESPONSE_INDICES.Z2]) === (on ? DO.ON : DO.OFF)
 
 export const buildCommandData = (data: number[]): number[] => {
   if (data.length > SIZES.COMMAND_DATA) {

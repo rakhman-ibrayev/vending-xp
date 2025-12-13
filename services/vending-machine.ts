@@ -159,12 +159,12 @@ class VendingMachineAPI {
 
       case C.CoolingState.COOLING:
         if (currentTemp <= this.targetTemperature) {
-          // Target reached: turn off both
+          // Target reached: turn off both and return to IDLE
           await this.setFan(false)
           await this.setCompressor(false)
           this.compressorStartTime = null
           this.fanStartTime = null
-          this.coolingState = C.CoolingState.COOLED
+          this.coolingState = C.CoolingState.IDLE
         } else if (
           this.compressorStartTime &&
           Date.now() - this.compressorStartTime >=
@@ -177,27 +177,15 @@ class VendingMachineAPI {
         }
         break
 
-      case C.CoolingState.COOLED:
-        if (
-          currentTemp >=
-          this.targetTemperature + C.COOLING.DEFAULT_RECOVERY_OFFSET
-        ) {
-          // Temperature recovered: restart cooling
-          await this.setFan(true)
-          this.fanStartTime = Date.now()
-          this.coolingState = C.CoolingState.STARTING_COOLING
-        }
-        break
-
       case C.CoolingState.COMPRESSOR_REST:
         if (
           Date.now() - this.restStartTime! >=
           C.COOLING.COMPRESSOR_REST_DURATION
         ) {
-          // 15 minutes rest - restart compressor
-          await this.setCompressor(true)
-          this.compressorStartTime = Date.now()
-          this.coolingState = C.CoolingState.COOLING
+          // 20 minutes rest complete - return to step 2 (restart cooling sequence)
+          // Fan remains on throughout, so just reset timing and go to STARTING_COOLING
+          this.fanStartTime = Date.now()
+          this.coolingState = C.CoolingState.STARTING_COOLING
         }
         break
     }
@@ -227,7 +215,11 @@ class VendingMachineAPI {
     return this.waitForResponse(command, response => {
       if (response.length < C.SIZES.RESPONSE_MIN_LENGTH) return null
 
-      return (hexToShort(`${response[2]}${response[3]}`) - 20) / 10
+      const temperature = hexToShort(
+        `${response[C.RESPONSE_INDICES.Z1]}${response[C.RESPONSE_INDICES.Z2]}`
+      )
+
+      return (temperature - 20) / 10
     })
   }
 
