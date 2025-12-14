@@ -66,3 +66,19 @@ export const buildCommandData = (data: number[]): number[] => {
 
   return [...data, ...Array(SIZES.COMMAND_DATA - data.length).fill(0)]
 }
+
+export const getDOName = (index: number): string => {
+  switch (index) {
+    case DO.COMPRESSOR_INDEX:
+      return 'compressor'
+    case DO.LIGHTS_INDEX:
+      return 'lights'
+    case DO.FAN:
+      return 'fan'
+    default:
+      return `DO${index}`
+  }
+}
+
+export const commandToHex = (command: number): string =>
+  `0x${command.toString(16).padStart(2, '0')}`

@@ -30,7 +30,15 @@ module.exports = ({ config }: ConfigContext): ExpoConfig => ({
         backgroundColor: '#ffffff'
       }
     ],
-    './plugins/withBootReceiver'
+    './plugins/withBootReceiver',
+    [
+      '@sentry/react-native/expo',
+      {
+        url: 'https://sentry.io/',
+        project: 'vending',
+        organization: 'pharmexpress'
+      }
+    ]
   ],
   experiments: {
     typedRoutes: true

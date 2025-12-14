@@ -5,8 +5,10 @@ import {
   parseDOStatus,
   parseMotorStatus,
   buildCommandData,
-  hexToShort
+  hexToShort,
+  getDOName
 } from './utils'
+import { logger } from './logger-service'
 
 export interface InitializationSettings {
   devicePath?: string
@@ -46,6 +48,8 @@ class VendingMachineAPI {
   }: InitializationSettings = {}): Promise<boolean> {
     if (this.isInitialized) return true
 
+    logger.hardware.initializing({ devicePath, baudRate })
+
     const connected = await SerialService.connect({
       devicePath,
       baudRate,
@@ -57,6 +61,9 @@ class VendingMachineAPI {
     if (connected) {
       this.isInitialized = true
       await this.setLights(true)
+      logger.hardware.initialized()
+    } else {
+      logger.hardware.initializationFailed()
     }
 
     this.coolingInterval = setInterval(async () => {
@@ -135,6 +142,8 @@ class VendingMachineAPI {
       return
     }
 
+    const previousState = this.coolingState
+
     switch (this.coolingState) {
       case C.CoolingState.IDLE:
         if (
@@ -189,6 +198,16 @@ class VendingMachineAPI {
         }
         break
     }
+
+    // Log state transitions
+    if (previousState !== this.coolingState) {
+      logger.cooling.stateChanged(
+        C.CoolingState[previousState],
+        C.CoolingState[this.coolingState],
+        currentTemp,
+        this.targetTemperature
+      )
+    }
   }
 
   /**
@@ -212,15 +231,26 @@ class VendingMachineAPI {
 
     await SerialService.sendCommand(command, buildCommandData([]))
 
-    return this.waitForResponse(command, response => {
-      if (response.length < C.SIZES.RESPONSE_MIN_LENGTH) return null
+    try {
+      const temperature = await this.waitForResponse(command, response => {
+        if (response.length < C.SIZES.RESPONSE_MIN_LENGTH) return null
 
-      const temperature = hexToShort(
-        `${response[C.RESPONSE_INDICES.Z1]}${response[C.RESPONSE_INDICES.Z2]}`
+        const tempRaw = hexToShort(
+          `${response[C.RESPONSE_INDICES.Z1]}${response[C.RESPONSE_INDICES.Z2]}`
+        )
+
+        return (tempRaw - 20) / 10
+      })
+
+      logger.hardware.temperatureRead(temperature)
+
+      return temperature
+    } catch (error) {
+      logger.hardware.temperatureReadError(
+        error instanceof Error ? error : new Error(String(error))
       )
-
-      return (temperature - 20) / 10
-    })
+      throw error
+    }
   }
 
   /**
@@ -270,6 +300,8 @@ class VendingMachineAPI {
       ? options.timeout / 10
       : C.TIMEOUT.MOTOR_TIMEOUT_MS
 
+    logger.hardware.vendingStarted(slot, options, maxWaitMs)
+
     await SerialService.sendCommand(
       command,
       buildCommandData([
@@ -291,12 +323,14 @@ class VendingMachineAPI {
 
         if (z3 === 0 && z10 > 0) {
           clearInterval(intervalId)
+          logger.hardware.vendingSuccess(slot, z3, z10)
           resolve({ success: true })
           return
         }
 
         if (z3 !== 0) {
           clearInterval(intervalId)
+          logger.hardware.vendingFailed(slot, z3, z10, options)
           resolve({ success: false })
           return
         }
@@ -305,6 +339,7 @@ class VendingMachineAPI {
       // overall timeout to stop polling
       setTimeout(() => {
         clearInterval(intervalId)
+        logger.hardware.vendingTimeout(slot, maxWaitMs, options)
         resolve({ success: false })
       }, maxWaitMs)
     })
@@ -368,10 +403,25 @@ class VendingMachineAPI {
   private static async setDO(index: number, on: boolean): Promise<boolean> {
     const command = C.COMMANDS.WRITE_DO
     const data = buildCommandData([index, on ? 1 : 0])
+    const doName = getDOName(index)
+
+    logger.hardware.doStateChanged(doName, on, index)
 
     await SerialService.sendCommand(command, data)
 
-    return this.waitForResponse(command, resp => parseDOStatus(resp, index, on))
+    try {
+      return await this.waitForResponse(command, resp =>
+        parseDOStatus(resp, index, on)
+      )
+    } catch (error) {
+      logger.hardware.doError(
+        error instanceof Error ? error : new Error(String(error)),
+        doName,
+        index,
+        on
+      )
+      throw error
+    }
   }
 
   /**
@@ -400,6 +450,7 @@ class VendingMachineAPI {
 
       setTimeout(() => {
         unsubscribe()
+        logger.serial.responseTimeout(command, timeout)
         reject(new Error(`Timeout waiting for response to command ${command}`))
       }, timeout)
     })

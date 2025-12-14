@@ -2,6 +2,7 @@ import SerialPortAPI, { type SerialPort } from 'react-native-serial-port-api'
 import crc16modbus from './crc16modbus'
 import MockSerialService from './mock-serial-service'
 import { SIZES, TIMEOUT } from './constants'
+import { logger } from './logger-service'
 
 /**
  * Settings for establishing a serial connection to the vending machine.
@@ -44,10 +45,19 @@ class SerialService {
    * @returns Promise resolving to true if connection successful
    */
   async connect(settings: ConnectionSettings): Promise<boolean> {
+    logger.serial.connecting(settings)
+
     try {
       const serialPort = await SerialPortAPI.open(settings.devicePath, settings)
 
-      if (!serialPort) throw new Error('M109E device not found')
+      if (!serialPort) {
+        const error = new Error('M109E device not found')
+        logger.serial.connectionFailed(error, {
+          devicePath: settings.devicePath,
+          baudRate: settings.baudRate
+        })
+        throw error
+      }
 
       this.serialPort = serialPort
 
@@ -61,12 +71,20 @@ class SerialService {
           bytes
         )
 
+        logger.serial.dataReceived(buff.toString('hex'), bytes)
+
         this.subscriptions.forEach(cb => cb(bytes))
       })
+
+      logger.serial.connected(settings)
 
       return true
     } catch (error) {
       console.error('[SerialService.connect] Connection failed:', error)
+      logger.serial.connectionFailed(
+        error instanceof Error ? error : new Error(String(error)),
+        { devicePath: settings.devicePath, baudRate: settings.baudRate }
+      )
       return false
     }
   }
@@ -78,7 +96,11 @@ class SerialService {
    * @returns Promise resolving to true if send successful
    */
   async sendCommand(command: number, data: number[]): Promise<boolean> {
-    if (!this.serialPort) throw new Error('Device not connected')
+    if (!this.serialPort) {
+      const error = new Error('Device not connected')
+      logger.serial.deviceNotConnected(error)
+      throw error
+    }
 
     await new Promise(resolve =>
       setTimeout(resolve, TIMEOUT.COMMAND_INTERVAL_MS)
@@ -96,7 +118,24 @@ class SerialService {
       commandHex
     )
 
-    return await this.serialPort.send(commandHex)
+    logger.serial.commandSent(command, data, commandHex)
+
+    try {
+      const result = await this.serialPort.send(commandHex)
+
+      if (!result) {
+        logger.serial.commandSendFailed(command, commandHex)
+      }
+
+      return result
+    } catch (error) {
+      logger.serial.commandError(
+        error instanceof Error ? error : new Error(String(error)),
+        command,
+        data
+      )
+      throw error
+    }
   }
 
   /**
@@ -114,6 +153,7 @@ class SerialService {
    * Disconnects from the serial port and clears subscriptions.
    */
   disconnect() {
+    logger.serial.disconnected()
     this.subscriptions.clear()
     this.serialPort?.close()
     this.serialPort = null
