@@ -6,7 +6,7 @@ const MINUTE_MS = 60_000
 
 const CONFIG = {
   shouldCheckForUpdates: true,
-  checkIntervalMs: 2.5 * MINUTE_MS
+  checkIntervalMs: 20 * MINUTE_MS
 }
 
 interface UseUpdateVersionOptions {
