@@ -62,16 +62,10 @@ class SerialService {
       this.serialPort = serialPort
 
       this.serialPort.onReceived(buff => {
-        const bytes = this.hexToByteArray(buff.toString('hex'))
+        const buffer = buff.toString('hex')
+        const bytes = this.hexToByteArray(buffer)
 
-        console.info(
-          '[SerialService.onReceived] Received buffer -',
-          buff,
-          'transformed to bytes -',
-          bytes
-        )
-
-        logger.serial.dataReceived(buff.toString('hex'), bytes)
+        logger.serial.dataReceived(buffer)
 
         this.subscriptions.forEach(cb => cb(bytes))
       })
@@ -80,7 +74,6 @@ class SerialService {
 
       return true
     } catch (error) {
-      console.error('[SerialService.connect] Connection failed:', error)
       logger.serial.connectionFailed(
         error instanceof Error ? error : new Error(String(error)),
         { devicePath: settings.devicePath, baudRate: settings.baudRate }
@@ -109,16 +102,7 @@ class SerialService {
     const frame = this.buildFrame(command, data)
     const commandHex = this.toHexString(frame)
 
-    console.info(
-      '[SerialService.sendCommand] Command -',
-      command,
-      'and data -',
-      data,
-      'resulted in hex string command -',
-      commandHex
-    )
-
-    logger.serial.commandSent(command, data, commandHex)
+    logger.serial.commandSent(commandHex)
 
     try {
       const result = await this.serialPort.send(commandHex)

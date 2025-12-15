@@ -4,6 +4,7 @@ import {
   hexToInt,
   parseDOStatus,
   parseMotorStatus,
+  parseMotorRunResult,
   buildCommandData,
   hexToShort,
   getDOName
@@ -229,18 +230,18 @@ class VendingMachineAPI {
   static async getTemperature(): Promise<number> {
     const command = C.COMMANDS.READ_TEMP
 
-    await SerialService.sendCommand(command, buildCommandData([]))
-
     try {
-      const temperature = await this.waitForResponse(command, response => {
-        if (response.length < C.SIZES.RESPONSE_MIN_LENGTH) return null
+      const temperature = await this.sendCommand(
+        command,
+        buildCommandData([]),
+        response => {
+          const tempRaw = hexToShort(
+            `${response[C.RESPONSE_INDICES.Z1]}${response[C.RESPONSE_INDICES.Z2]}`
+          )
 
-        const tempRaw = hexToShort(
-          `${response[C.RESPONSE_INDICES.Z1]}${response[C.RESPONSE_INDICES.Z2]}`
-        )
-
-        return (tempRaw - 20) / 10
-      })
+          return (tempRaw - 20) / 10
+        }
+      )
 
       logger.hardware.temperatureRead(temperature)
 
@@ -258,24 +259,20 @@ class VendingMachineAPI {
    * @returns Promise resolving to serial number as a hex string
    */
   static async getSerialNumber(): Promise<string> {
-    if (this.serialNumber) {
-      return this.serialNumber
-    }
+    if (this.serialNumber) return this.serialNumber
 
-    const command = C.COMMANDS.READ_SERIAL
+    this.serialNumber = await this.sendCommand(
+      C.COMMANDS.READ_SERIAL,
+      buildCommandData([]),
+      response => {
+        const serialBytes = response.slice(
+          C.SERIAL.START_INDEX,
+          C.SERIAL.END_INDEX + 1
+        )
 
-    await SerialService.sendCommand(command, buildCommandData([]))
-
-    this.serialNumber = await this.waitForResponse(command, response => {
-      if (response.length < C.SIZES.RESPONSE_MIN_LENGTH) return null
-
-      const serialBytes = response.slice(
-        C.SERIAL.START_INDEX,
-        C.SERIAL.END_INDEX + 1
-      )
-
-      return serialBytes.map(byte => hexToInt(byte)).join('')
-    })
+        return serialBytes.map(byte => hexToInt(byte)).join('')
+      }
+    )
 
     return this.serialNumber
   }
@@ -302,42 +299,75 @@ class VendingMachineAPI {
 
     logger.hardware.vendingStarted(slot, options, maxWaitMs)
 
-    await SerialService.sendCommand(
-      command,
-      buildCommandData([
-        slot,
-        options.motorType ?? C.MOTOR_DEFAULTS.MOTOR_TYPE,
-        options.lightScreenMode ?? C.MOTOR_DEFAULTS.LIGHT_SCREEN_MODE,
-        options.delay ?? C.MOTOR_DEFAULTS.DELAY,
-        C.MOTOR_DEFAULTS.CONTINUE,
-        options.timeout ?? C.MOTOR_DEFAULTS.TIMEOUT,
-        C.MOTOR_DEFAULTS.LOCK_TIME
-      ])
-    )
+    // Send motor run command and wait for acknowledgment
+    try {
+      await this.sendCommand(
+        command,
+        buildCommandData([
+          slot,
+          options.motorType ?? C.MOTOR_DEFAULTS.MOTOR_TYPE,
+          options.lightScreenMode ?? C.MOTOR_DEFAULTS.LIGHT_SCREEN_MODE,
+          options.delay ?? C.MOTOR_DEFAULTS.DELAY,
+          C.MOTOR_DEFAULTS.CONTINUE,
+          options.timeout ?? C.MOTOR_DEFAULTS.TIMEOUT,
+          C.MOTOR_DEFAULTS.LOCK_TIME
+        ]),
+        response => {
+          const executionResult = hexToInt(response[C.RESPONSE_INDICES.Z1])
+
+          if (executionResult !== 0) {
+            throw new Error(
+              `Motor run failed: ${parseMotorRunResult(executionResult)}`
+            )
+          }
+
+          return true
+        }
+      )
+    } catch (error) {
+      logger.hardware.motorRunCommandFailed(
+        error instanceof Error ? error : new Error(String(error)),
+        slot
+      )
+
+      return { success: false }
+    }
 
     return await new Promise(resolve => {
-      const intervalId = setInterval(async () => {
-        const { raw } = await this.getMotorStatus()
-        const z3 = hexToInt(raw[C.RESPONSE_INDICES.Z3])
-        const z10 = hexToInt(raw[C.RESPONSE_INDICES.Z10])
+      let intervalId: ReturnType<typeof setInterval>
+      let timeoutId: ReturnType<typeof setTimeout>
 
-        if (z3 === 0 && z10 > 0) {
-          clearInterval(intervalId)
-          logger.hardware.vendingSuccess(slot, z3, z10)
-          resolve({ success: true })
-          return
-        }
+      intervalId = setInterval(async () => {
+        try {
+          const { raw } = await this.getMotorStatus()
+          const z3 = hexToInt(raw[C.RESPONSE_INDICES.Z3])
+          const z10 = hexToInt(raw[C.RESPONSE_INDICES.Z10])
 
-        if (z3 !== 0) {
-          clearInterval(intervalId)
-          logger.hardware.vendingFailed(slot, z3, z10, options)
-          resolve({ success: false })
-          return
+          if (z3 === 0 && z10 > 0) {
+            clearInterval(intervalId)
+            clearTimeout(timeoutId)
+            logger.hardware.vendingSuccess(slot, z3, z10)
+            resolve({ success: true })
+            return
+          }
+
+          if (z3 !== 0) {
+            clearInterval(intervalId)
+            clearTimeout(timeoutId)
+            logger.hardware.vendingFailed(slot, z3, z10, options)
+            resolve({ success: false })
+            return
+          }
+        } catch (error) {
+          // Log but continue polling - transient serial errors shouldn't fail vending
+          logger.hardware.motorStatusCheckError(
+            error instanceof Error ? error : new Error(String(error))
+          )
         }
       }, C.TIMEOUT.DEFAULT_MS)
 
       // overall timeout to stop polling
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
         clearInterval(intervalId)
         logger.hardware.vendingTimeout(slot, maxWaitMs, options)
         resolve({ success: false })
@@ -355,16 +385,10 @@ class VendingMachineAPI {
   }> {
     const command = C.COMMANDS.READ_MOTOR_STATUS
 
-    await SerialService.sendCommand(command, buildCommandData([]))
-
-    return this.waitForResponse(command, response => {
-      if (response.length < C.SIZES.RESPONSE_MIN_LENGTH) return null
-
-      return {
-        raw: response,
-        status: parseMotorStatus(hexToInt(response[C.RESPONSE_INDICES.Z3]))
-      }
-    })
+    return this.sendCommand(command, buildCommandData([]), response => ({
+      raw: response,
+      status: parseMotorStatus(hexToInt(response[C.RESPONSE_INDICES.Z3]))
+    }))
   }
 
   /**
@@ -407,10 +431,8 @@ class VendingMachineAPI {
 
     logger.hardware.doStateChanged(doName, on, index)
 
-    await SerialService.sendCommand(command, data)
-
     try {
-      return await this.waitForResponse(command, resp =>
+      return await this.sendCommand(command, data, resp =>
         parseDOStatus(resp, index, on)
       )
     } catch (error) {
@@ -425,34 +447,71 @@ class VendingMachineAPI {
   }
 
   /**
-   * Waits for a response matching the specified command and criteria.
-   * @param command - The command byte to match in the response
+   * Sends a command and waits for a matching response.
+   * @param command - The command byte to send
+   * @param data - Command data bytes (will be padded to 16 bytes)
    * @param matcher - A function that processes the response data and returns a result or null if not matched
    * @param timeout - Optional timeout in milliseconds (default is C.TIMEOUT.DEFAULT_MS)
    * @returns A promise that resolves with the matched result or rejects on timeout
    */
-  private static waitForResponse<T>(
+  private static async sendCommand<T>(
     command: number,
-    matcher: (data: string[]) => T | null,
+    data: number[],
+    matcher: (response: string[]) => T,
     timeout = C.TIMEOUT.DEFAULT_MS
   ): Promise<T> {
     return new Promise((resolve, reject) => {
+      let timeoutId: ReturnType<typeof setTimeout>
+      let settled = false
+
+      // Set up listener FIRST to avoid race conditions
       const unsubscribe = SerialService.onData(resp => {
-        if (hexToInt(resp[1]) !== command) return
+        if (settled || hexToInt(resp[1]) !== command) return
 
-        const result = matcher(resp)
+        // Validate response length before calling matcher
+        if (resp.length < C.SIZES.RESPONSE_MIN_LENGTH) {
+          settled = true
 
-        if (result !== null && result !== undefined) {
+          clearTimeout(timeoutId)
+          unsubscribe()
+          reject(new Error(`Invalid response: ${resp}`))
+          return
+        }
+
+        try {
+          const result = matcher(resp)
+          settled = true
+
+          clearTimeout(timeoutId)
           unsubscribe()
           resolve(result)
+        } catch (error) {
+          settled = true
+
+          clearTimeout(timeoutId)
+          unsubscribe()
+          reject(error)
         }
       })
 
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
+        if (settled) return
+        settled = true
+
         unsubscribe()
         logger.serial.responseTimeout(command, timeout)
         reject(new Error(`Timeout waiting for response to command ${command}`))
       }, timeout)
+
+      // THEN send the command and handle errors
+      SerialService.sendCommand(command, data).catch(error => {
+        if (settled) return
+        settled = true
+
+        clearTimeout(timeoutId)
+        unsubscribe()
+        reject(error)
+      })
     })
   }
 }

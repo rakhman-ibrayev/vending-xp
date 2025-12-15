@@ -26,6 +26,9 @@ export class SseLogger extends BaseLogger {
   }
 
   eventReceived(eventType: string, data: any): void {
+    // Skip logging ping events to reduce noise
+    if (eventType === 'ping') return
+
     this.breadcrumb(`SSE event: ${eventType}`, 'debug', {
       eventType,
       eventData: data,

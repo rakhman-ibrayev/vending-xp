@@ -85,4 +85,19 @@ export class HardwareLogger extends BaseLogger {
       }
     )
   }
+
+  motorStatusCheckError(error: Error): void {
+    this.breadcrumb('Motor status check failed', 'warning', {
+      error: error.message
+    })
+  }
+
+  motorRunCommandFailed(error: Error, slot: number): void {
+    this.captureError(
+      error,
+      'error',
+      { operation: 'motor_run_command' },
+      { vending: { slot } }
+    )
+  }
 }

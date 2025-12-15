@@ -40,12 +40,9 @@ export class SerialLogger extends BaseLogger {
     this.breadcrumb('Serial connection closed', 'info')
   }
 
-  commandSent(command: number, data: number[], frame: string): void {
+  commandSent(bytes: string): void {
     this.breadcrumb('Serial command sent', 'debug', {
-      command: commandToHex(command),
-      commandDecimal: command,
-      data,
-      frame
+      bytes
     })
   }
 
@@ -67,10 +64,9 @@ export class SerialLogger extends BaseLogger {
     )
   }
 
-  dataReceived(buffer: string, bytes: string[]): void {
+  dataReceived(bytes: string): void {
     this.breadcrumb('Serial data received', 'debug', {
-      buffer,
-      bytes: bytes.join(' ')
+      bytes
     })
   }
 
