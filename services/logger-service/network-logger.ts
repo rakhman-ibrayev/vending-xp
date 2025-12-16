@@ -75,11 +75,9 @@ export class NetworkLogger extends BaseLogger {
   }
 
   connectivityIssue(url: string, error: string): void {
-    this.captureMessage(
-      'Network connectivity issue',
-      'warning',
-      { operation: 'network_connectivity' },
-      { network: { url, error } }
-    )
+    this.breadcrumb('Network connectivity issue', 'warning', {
+      url,
+      error
+    })
   }
 }
