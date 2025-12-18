@@ -28,8 +28,6 @@ api.interceptors.request.use(
 
     if (machineSerialNumber) {
       config.headers['x-serial-number'] = machineSerialNumber
-    } else {
-      console.warn('[API] No serial number set for request:', config.url)
     }
 
     // Log request start
@@ -88,20 +86,6 @@ api.interceptors.response.use(
     }
     // Handle HTTP error responses
     else {
-      // Special logging for 401 errors to diagnose authentication issues
-      if (error.response?.status === 401) {
-        console.error('[API] 401 Unauthorized:', {
-          url,
-          method,
-          duration,
-          requestId,
-          serialNumberSet: !!machineSerialNumber,
-          serialNumber: machineSerialNumber
-            ? `${machineSerialNumber.substring(0, 4)}...`
-            : 'none'
-        })
-      }
-
       logger.network.requestFailed(
         method,
         url,
