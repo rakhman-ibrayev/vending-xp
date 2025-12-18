@@ -62,6 +62,10 @@ class VendingMachineAPI {
     if (connected) {
       this.isInitialized = true
       await this.setLights(true)
+      await this.setCompressor(false)
+      await this.setFan(false)
+      this.coolingState = C.CoolingState.IDLE
+
       logger.hardware.initialized()
     } else {
       logger.hardware.initializationFailed()
@@ -140,6 +144,25 @@ class VendingMachineAPI {
    */
   static async startCooling(currentTemp: number): Promise<void> {
     if (this.targetTemperature === null) {
+      // Safety: If no target temp is set, ensure cooling is off
+      if (this.coolingState !== C.CoolingState.IDLE) {
+        await this.stopCooling()
+      }
+
+      return
+    }
+
+    // Safety: If temperature is dangerously low (more than 5°C below target), force shutdown
+    if (currentTemp < this.targetTemperature - 3) {
+      if (this.coolingState !== C.CoolingState.IDLE) {
+        logger.cooling.stateChanged(
+          C.CoolingState[this.coolingState],
+          'EMERGENCY_SHUTDOWN',
+          currentTemp,
+          this.targetTemperature
+        )
+        await this.stopCooling()
+      }
       return
     }
 
