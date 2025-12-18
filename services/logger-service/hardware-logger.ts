@@ -100,4 +100,23 @@ export class HardwareLogger extends BaseLogger {
       { vending: { slot } }
     )
   }
+
+  suspiciousTemperature(
+    temp: number,
+    rawValue: number,
+    response: string[]
+  ): void {
+    this.captureMessage(
+      `Suspicious temperature reading: ${temp}°C`,
+      'warning',
+      { temp_category: 'anomaly' },
+      {
+        hardware: {
+          temperature: temp,
+          rawValue,
+          fullResponse: response.join(' ')
+        }
+      }
+    )
+  }
 }

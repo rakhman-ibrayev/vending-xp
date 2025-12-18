@@ -238,8 +238,14 @@ class VendingMachineAPI {
           const tempRaw = hexToShort(
             `${response[C.RESPONSE_INDICES.Z1]}${response[C.RESPONSE_INDICES.Z2]}`
           )
+          const temp = (tempRaw - 20) / 10
 
-          return (tempRaw - 20) / 10
+          // Log suspicious temperature readings immediately to Sentry
+          if (temp < 0 || temp > 50) {
+            logger.hardware.suspiciousTemperature(temp, tempRaw, response)
+          }
+
+          return temp
         }
       )
 
