@@ -62,20 +62,18 @@ class VendingMachineAPI {
     if (connected) {
       this.isInitialized = true
       await this.setLights(true)
-      await this.setCompressor(false)
-      await this.setFan(false)
-      this.coolingState = C.CoolingState.IDLE
+
+      await this.stopCooling()
+      this.coolingInterval = setInterval(async () => {
+        const currentTemp = await this.getTemperature()
+        this.emitTemperatureChange(currentTemp)
+        await this.startCooling(currentTemp)
+      }, C.COOLING.TEMPERATURE_CHECK_INTERVAL)
 
       logger.hardware.initialized()
     } else {
       logger.hardware.initializationFailed()
     }
-
-    this.coolingInterval = setInterval(async () => {
-      const currentTemp = await this.getTemperature()
-      this.emitTemperatureChange(currentTemp)
-      await this.startCooling(currentTemp)
-    }, C.COOLING.TEMPERATURE_CHECK_INTERVAL)
 
     return connected
   }
