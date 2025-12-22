@@ -22,7 +22,7 @@ const SupportContacts = () => {
 
 const styles = StyleSheet.create({
   supportContact: {
-    paddingInline: 18,
+    paddingInline: 16,
     paddingBottom: 20,
     backgroundColor: '#ffffff',
     flexDirection: 'row',
@@ -30,8 +30,9 @@ const styles = StyleSheet.create({
     gap: 16
   },
   supportContactText: {
-    fontSize: 16,
-    color: '#888888'
+    fontSize: 22,
+    color: '#888888',
+    fontWeight: 600
   }
 })
 
