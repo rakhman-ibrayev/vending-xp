@@ -2,7 +2,7 @@
 
 import { useNetworkState } from 'expo-network'
 import type React from 'react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import VendingMachineAPI from '../services/vending-machine'
@@ -42,6 +42,8 @@ const StatusBar = ({
   const [temperature, setTemperature] = useState<number | null>(null)
   const [isExitModalOpen, setIsExitModalOpen] = useState(false)
   const telemetryMutation = useUpdateTelemetry()
+  const mutationRef = useRef(telemetryMutation)
+  mutationRef.current = telemetryMutation
 
   const toggleExitModal = () => setIsExitModalOpen(prev => !prev)
 
@@ -56,7 +58,7 @@ const StatusBar = ({
   useEffect(() => {
     const handleTemperatureChange = (temp: number) => {
       setTemperature(temp)
-      telemetryMutation.mutate({ temperature: temp })
+      mutationRef.current.mutate({ temperature: temp })
     }
 
     VendingMachineAPI.onTemperatureChange(handleTemperatureChange)
@@ -64,7 +66,7 @@ const StatusBar = ({
     return () => {
       VendingMachineAPI.offTemperatureChange(handleTemperatureChange)
     }
-  }, [telemetryMutation])
+  }, [])
 
   return (
     <View

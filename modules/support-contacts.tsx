@@ -31,8 +31,7 @@ const styles = StyleSheet.create({
   },
   supportContactText: {
     fontSize: 22,
-    color: '#888888',
-    fontWeight: 600
+    color: '#888888'
   }
 })
 
