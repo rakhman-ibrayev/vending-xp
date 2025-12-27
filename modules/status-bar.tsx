@@ -45,6 +45,14 @@ const StatusBar = ({
   const mutationRef = useRef(telemetryMutation)
   mutationRef.current = telemetryMutation
 
+  // Track the last temperature reading
+  const lastTemperatureRef = useRef<number | null>(null)
+  // Track previous connection state
+  const wasConnectedRef = useRef(isConnected)
+  // Track current connection state in ref for temperature handler
+  const isConnectedRef = useRef(isConnected)
+  isConnectedRef.current = isConnected
+
   const toggleExitModal = () => setIsExitModalOpen(prev => !prev)
 
   useEffect(() => {
@@ -58,7 +66,12 @@ const StatusBar = ({
   useEffect(() => {
     const handleTemperatureChange = (temp: number) => {
       setTemperature(temp)
-      mutationRef.current.mutate({ temperature: temp })
+      lastTemperatureRef.current = temp
+
+      // Use ref to check latest connection state
+      if (isConnectedRef.current) {
+        mutationRef.current.mutate({ temperature: temp })
+      }
     }
 
     VendingMachineAPI.onTemperatureChange(handleTemperatureChange)
@@ -67,6 +80,21 @@ const StatusBar = ({
       VendingMachineAPI.offTemperatureChange(handleTemperatureChange)
     }
   }, [])
+
+  // Retry last telemetry when reconnecting
+  useEffect(() => {
+    // Check if we just reconnected (was offline, now online)
+    const justReconnected = !wasConnectedRef.current && isConnected
+
+    if (justReconnected && lastTemperatureRef.current !== null) {
+      // Reset any failed mutation state and retry
+      mutationRef.current.reset()
+      mutationRef.current.mutate({ temperature: lastTemperatureRef.current })
+    }
+
+    // Update the ref for next comparison
+    wasConnectedRef.current = isConnected
+  }, [isConnected])
 
   return (
     <View
