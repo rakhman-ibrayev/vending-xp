@@ -8,11 +8,9 @@ export const machinesQueries = {
     queryKey: [...machinesQueries.all(), 'current'],
     queryFn: async () => {
       const res = await getMachine()
-      const targetTemperature = res.data.data?.target_temperature
 
-      if (typeof targetTemperature === 'number') {
-        VendingMachineAPI.setTargetTemperature(targetTemperature)
-      }
+      // Lets the hardware layer reject slots beyond the machine's configured count.
+      VendingMachineAPI.setSlotCount(res.data.data?.num_slots)
 
       return res
     }

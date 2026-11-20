@@ -37,7 +37,7 @@ const Order = () => {
   const [showConfirmation, setShowConfirmation] = useState(false)
 
   const [showWarning, setShowWarning] = useState(false)
-  const warningTimerRef = useRef<number | null>(null)
+  const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const order = orderQuery.data?.data.data
 
@@ -95,7 +95,7 @@ const Order = () => {
 
   // Vend product when order is paid
   useEffect(() => {
-    let timeout: number | undefined
+    let timeout: ReturnType<typeof setTimeout> | undefined
 
     if (
       order?.status === 'paid' &&
@@ -108,7 +108,7 @@ const Order = () => {
       setVendStatus('pending')
       showLoading?.()
 
-      VendingMachineAPI.vendProduct(order.slot_index - 1).then(result => {
+      VendingMachineAPI.vendProduct(order.slot_index).then(result => {
         hideLoading?.()
         setRefetchInterval(false)
 

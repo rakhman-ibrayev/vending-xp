@@ -1,41 +1,34 @@
-import { SIZES } from './constants'
+import { COMMANDS, FRAME_MODE } from './constants'
+import {
+  decodeFrame,
+  encodeFrame,
+  XPFrameReader,
+  type ConnectionSettings,
+  type XPFrame
+} from './xp-frame'
 
-export interface ConnectionSettings {
-  devicePath: string
-  baudRate: number
-  dataBits: number
-  stopBits: number
-  parity: 0 | 1 | 2
-}
+// Simulates the XP board at the byte level: TX frames are encoded and decoded
+// exactly as the board would, and replies are encoded, fragmented and fed through
+// the same XPFrameReader the real SerialService uses.
+//
+// EXPO_PUBLIC_MOCK_SERIAL_SCENARIO = success | error | timeout | random (default success)
+type Scenario = 'success' | 'error' | 'timeout' | 'random'
 
-class MockSerialPort {
-  private listeners: Set<(buff: Buffer) => void> = new Set()
+const SCENARIO: Scenario = (() => {
+  const value = process.env.EXPO_PUBLIC_MOCK_SERIAL_SCENARIO
+  return value === 'error' || value === 'timeout' || value === 'random'
+    ? value
+    : 'success'
+})()
 
-  onReceived(callback: (buff: Buffer) => void) {
-    this.listeners.add(callback)
-    return () => this.listeners.delete(callback)
-  }
-
-  send(hex: string): Promise<boolean> {
-    return Promise.resolve(true)
-  }
-
-  close(): void {
-    this.listeners.clear()
-  }
-
-  // Simulate receiving data
-  simulateReceive(data: number[]) {
-    const buffer = new Uint8Array(data)
-    this.listeners.forEach(cb => cb(buffer as any))
-  }
-}
+const MOTOR_TIME_MS = 2000 // manufacturer answer Q4: ~2 s per spin
 
 class MockSerialService {
   private static instance: MockSerialService
-  private mockPort: MockSerialPort | null = null
-  private subscriptions: Set<(data: string[]) => void> = new Set()
+  private subscriptions: Set<(frame: XPFrame) => void> = new Set()
+  private reader = new XPFrameReader(FRAME_MODE)
   private isConnected = false
+  private motorBusyUntil = 0
 
   private constructor() {}
 
@@ -46,147 +39,107 @@ class MockSerialService {
     return MockSerialService.instance
   }
 
-  async connect(settings: ConnectionSettings): Promise<boolean> {
-    // Simulate connection delay
-    await new Promise(resolve => setTimeout(resolve, 500))
-
-    this.mockPort = new MockSerialPort()
+  async connect(_settings: ConnectionSettings): Promise<boolean> {
+    await new Promise(resolve => setTimeout(resolve, 300))
+    this.reader.reset()
     this.isConnected = true
-
-    // Simulate initial connection response
-    setTimeout(() => {
-      if (this.mockPort) {
-        // Simulate a basic response
-        this.mockPort.simulateReceive([0x01, 0x00, 0x00, 0x00])
-      }
-    }, 100)
-
     return true
   }
 
-  async sendCommand(command: number, data: number[]): Promise<boolean> {
+  async sendCommand(
+    cmd: number,
+    data1: number,
+    data2: number
+  ): Promise<boolean> {
     if (!this.isConnected) throw new Error('Mock device not connected')
 
-    // Simulate responses based on command
-    setTimeout(
-      () => {
-        this.simulateResponse(command, data)
-      },
-      100 + Math.random() * 200
-    ) // Random delay 100-300ms
-
-    return Promise.resolve(true)
-  }
-
-  buildCommandData(data: number[]): number[] {
-    if (data.length > 16) {
-      throw new Error(
-        `Data length exceeds maximum of ${SIZES.COMMAND_DATA} bytes`
-      )
+    // Same encoder (and byte validation) as the real port...
+    const wire = encodeFrame(cmd, data1, data2, { mode: FRAME_MODE })
+    // ...and decode it as the board would.
+    const received = decodeFrame(wire, { mode: FRAME_MODE })
+    if (!received.ok) {
+      throw new Error(`Mock board rejected frame: ${received.error}`)
     }
 
-    return [...data, ...Array(SIZES.COMMAND_DATA - data.length).fill(0)]
+    this.simulateBoard(received.frame)
+    return true
   }
 
-  onData(callback: (data: string[]) => void): () => void {
+  onData(callback: (frame: XPFrame) => void): () => void {
     this.subscriptions.add(callback)
-    return () => this.subscriptions.delete(callback)
+    return () => {
+      this.subscriptions.delete(callback)
+    }
   }
 
   disconnect() {
     this.subscriptions.clear()
-    this.mockPort?.close()
-    this.mockPort = null
+    this.reader.reset()
     this.isConnected = false
   }
 
   devicePaths(callback: (paths: string[]) => void) {
-    setTimeout(() => {
-      callback(['/dev/ttyS0', '/dev/ttyUSB0', '/dev/ttyACM0'])
-    }, 100)
+    setTimeout(
+      () => callback(['/dev/ttyS1', '/dev/ttyS0', '/dev/ttyUSB0']),
+      100
+    )
   }
 
   deviceNames(callback: (names: string[]) => void) {
-    setTimeout(() => {
-      callback(['Serial Port 1', 'USB Serial', 'ACM Device'])
-    }, 100)
+    setTimeout(
+      () => callback(['Serial Port 1', 'Serial Port 0', 'USB Serial']),
+      100
+    )
   }
 
-  private simulateResponse(command: number, originalData: number[]) {
-    let response: number[]
+  private simulateBoard({ cmd, data1: row, data2: col }: XPFrame) {
+    if (cmd !== COMMANDS.MOTOR_RUN) return
 
-    switch (command) {
-      case 0x01: // Read Serial Number
-        // Simulate serial number response
-        response = [
-          0x01,
-          0x01, // Slave, Command
-          0x12,
-          0x34,
-          0x56,
-          0x78,
-          0x9a,
-          0xbc,
-          0xde,
-          0xf0,
-          0x11,
-          0x22,
-          0x33,
-          0x44, // Serial bytes
-          ...Array(6).fill(0), // Padding
-          0x00,
-          0x00 // CRC (mock)
-        ]
-        break
+    const outcome: Exclude<Scenario, 'random'> =
+      SCENARIO === 'random'
+        ? (['success', 'success', 'error', 'timeout'] as const)[
+            Math.floor(Math.random() * 4)
+          ]
+        : SCENARIO
 
-      case 0x05: // Motor Run (Vend Product)
-        // Simulate successful vend
-        response = [
-          0x01,
-          0x05, // Slave, Command
-          0x00,
-          0x00, // Status bytes
-          ...Array(16).fill(0), // Padding
-          0x00,
-          0x00 // CRC
-        ]
-        break
+    if (outcome === 'timeout') return
 
-      case 0x07: // Read Temperature
-        // Simulate temperature (25.0°C = 750)
-        // Formula: raw = (temp_celsius * 10) + 500
-        // So 25°C = (25 * 10) + 500 = 750
-        const temp = 750
-        response = [
-          0x01,
-          0x07, // Slave, Command
-          (temp >> 8) & 0xff, // High byte first
-          temp & 0xff, // Low byte second
-          ...Array(16).fill(0), // Padding
-          0x00,
-          0x00 // CRC
-        ]
-        break
+    // The board queues commands while a motor is running (answers Q4).
+    const now = Date.now()
+    const startAt = Math.max(now, this.motorBusyUntil)
+    this.motorBusyUntil = startAt + MOTOR_TIME_MS
+    const delay = this.motorBusyUntil - now
 
-      case 0x08: // Write DO (Lights/Compressor)
-        // Simulate success
-        response = [
-          0x01,
-          0x08, // Slave, Command
-          originalData[0], // Channel
-          originalData[1] ? 0xf1 : 0xf0, // Status
-          ...Array(16).fill(0), // Padding
-          0x00,
-          0x00 // CRC
-        ]
-        break
+    const replyCmd =
+      outcome === 'success' ? COMMANDS.MOTOR_RUN : COMMANDS.MOTOR_ERROR
+    // Board-generated reply always uses a fresh random ENC in spec mode.
+    const reply = encodeFrame(replyCmd, row, col, { mode: FRAME_MODE })
 
-      default:
-        response = [0x01, command, ...Array(18).fill(0), 0x00, 0x00]
+    setTimeout(() => this.deliverFragmented(reply), delay)
+  }
+
+  private deliverFragmented(bytes: number[]) {
+    // Split into random 1-5 byte chunks to exercise reassembly, like real UART reads.
+    let offset = 0
+    let chunkDelay = 0
+    while (offset < bytes.length) {
+      const size = Math.min(
+        bytes.length - offset,
+        1 + Math.floor(Math.random() * 5)
+      )
+      const chunk = bytes.slice(offset, offset + size)
+      offset += size
+      setTimeout(() => this.receive(chunk), chunkDelay)
+      chunkDelay += 5
     }
+  }
 
-    const hexResponse = response.map(b => b.toString(16).padStart(2, '0'))
-    this.subscriptions.forEach(cb => cb(hexResponse))
+  private receive(chunk: number[]) {
+    if (!this.isConnected) return
+    for (const event of this.reader.push(chunk)) {
+      if (event.type === 'frame')
+        this.subscriptions.forEach(cb => cb(event.frame))
+    }
   }
 }
 

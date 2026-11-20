@@ -34,8 +34,3 @@ export const failOrder = (orderId: number) =>
   api.patch(`/vending-machines/orders/${orderId}/failed`) as Promise<
     ApiResponse<OrderWithStatus>
   >
-
-export const updateTelemetry = (data: { temperature: number }) =>
-  api.post(`/vending-machines/telemetry`, data) as Promise<
-    ApiResponse<{ id: number }>
-  >
