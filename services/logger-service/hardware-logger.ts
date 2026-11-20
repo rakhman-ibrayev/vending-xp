@@ -1,8 +1,5 @@
 import { BaseLogger } from './base-logger'
 
-/**
- * Hardware operations logging
- */
 export class HardwareLogger extends BaseLogger {
   protected readonly category = 'vending_machine'
 
@@ -20,14 +17,6 @@ export class HardwareLogger extends BaseLogger {
     })
   }
 
-  temperatureRead(temperature: number): void {
-    this.breadcrumb('Temperature read', 'debug', { temperature })
-  }
-
-  temperatureReadError(error: Error): void {
-    this.captureError(error, 'warning', { operation: 'get_temperature' })
-  }
-
   vendingStarted(
     slot: number,
     options: Record<string, any>,
@@ -36,21 +25,25 @@ export class HardwareLogger extends BaseLogger {
     this.breadcrumb('Vending product', 'info', { slot, options, maxWaitMs })
   }
 
-  vendingSuccess(slot: number, z3: number, z10: number): void {
-    this.breadcrumb('Product vended successfully', 'info', { slot, z3, z10 })
+  vendingSuccess(slot: number, replyData1: number, replyData2: number): void {
+    this.breadcrumb('Product vended successfully', 'info', {
+      slot,
+      replyData1,
+      replyData2
+    })
   }
 
   vendingFailed(
     slot: number,
-    z3: number,
-    z10: number,
+    faultRow: number,
+    faultCol: number,
     options: Record<string, any>
   ): void {
     this.captureMessage(
       'Product vending failed',
       'warning',
       { operation: 'vend_product' },
-      { vending: { slot, z3, z10, options } }
+      { vending: { slot, faultRow, faultCol, options } }
     )
   }
 
@@ -67,28 +60,24 @@ export class HardwareLogger extends BaseLogger {
     )
   }
 
-  doStateChanged(doName: string, state: boolean, index: number): void {
-    this.breadcrumb(`Setting ${doName} ${state ? 'ON' : 'OFF'}`, 'debug', {
-      index,
-      on: state,
-      doName
-    })
-  }
-
-  doError(error: Error, doName: string, index: number, state: boolean): void {
-    this.captureError(
-      error,
-      'warning',
-      { operation: 'set_do' },
-      {
-        hardware: { doName, index, state: state ? 'ON' : 'OFF' }
-      }
+  invalidSlot(slot: number, maxSlot: number): void {
+    this.captureMessage(
+      `Rejected vend for invalid slot ${slot}`,
+      'error',
+      { operation: 'vend_product' },
+      { vending: { slot, maxSlot } }
     )
   }
 
-  motorStatusCheckError(error: Error): void {
-    this.breadcrumb('Motor status check failed', 'warning', {
-      error: error.message
+  replyIgnored(
+    slot: number,
+    reason: string,
+    frame: Record<string, number>
+  ): void {
+    this.breadcrumb('Motor reply ignored', 'warning', {
+      slot,
+      reason,
+      ...frame
     })
   }
 
@@ -98,25 +87,6 @@ export class HardwareLogger extends BaseLogger {
       'error',
       { operation: 'motor_run_command' },
       { vending: { slot } }
-    )
-  }
-
-  suspiciousTemperature(
-    temp: number,
-    rawValue: number,
-    response: string[]
-  ): void {
-    this.captureMessage(
-      `Suspicious temperature reading: ${temp}°C`,
-      'warning',
-      { temp_category: 'anomaly' },
-      {
-        hardware: {
-          temperature: temp,
-          rawValue,
-          fullResponse: response.join(' ')
-        }
-      }
     )
   }
 }

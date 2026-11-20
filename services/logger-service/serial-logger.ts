@@ -70,6 +70,10 @@ export class SerialLogger extends BaseLogger {
     })
   }
 
+  frameRejected(reason: string, bytes: string): void {
+    this.breadcrumb('Serial frame rejected', 'warning', { reason, bytes })
+  }
+
   deviceNotConnected(error: Error): void {
     this.captureError(error, 'error', { serial_operation: 'send_command' })
   }

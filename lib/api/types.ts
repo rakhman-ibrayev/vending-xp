@@ -6,9 +6,7 @@ export interface Machine {
   location: string | null
   description: string | null
   status: 'online' | 'offline'
-  temperature: number | null
   last_seen: string | null
-  target_temperature: number
   num_slots: number
   device_path: string
   baud_rate: number
